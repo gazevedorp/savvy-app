@@ -21,12 +21,12 @@ export default function LinkCard({ link }: LinkCardProps) {
     router.push(`/link/${link.id}`);
   };
   
-  const handleToggleRead = (e) => {
+  const handleToggleRead = (e: Event) => {
     e.stopPropagation();
     updateLink(link.id, { isRead: !link.isRead });
   };
   
-  const handleOpenExternal = (e) => {
+  const handleOpenExternal = (e: Event) => {
     e.stopPropagation();
     // This would use Linking in a real implementation
     console.log(`Opening ${link.url} externally`);
@@ -38,14 +38,16 @@ export default function LinkCard({ link }: LinkCardProps) {
   
   const getTypeColor = () => {
     switch (link.type) {
-      case 'article': return colors.primary;
+      case 'link': return colors.primary;
       case 'video': return '#FF2D55';
-      case 'podcast': return '#5856D6';
-      case 'image': return '#30D158';
-      case 'document': return '#FF9500';
+      case 'image': return '#34C759'; // Green
+      case 'music': return '#5856D6'; // Purple
+      case 'text': return '#FF9500'; // Orange
       default: return colors.secondary;
     }
   };
+
+  const isLocalImage = link.type === 'image' && link.url.startsWith('file://');
 
   return (
     <Animated.View entering={FadeIn.duration(300).delay(100)}>
@@ -78,7 +80,7 @@ export default function LinkCard({ link }: LinkCardProps) {
           </View>
 
           <Text style={[styles.url, { color: colors.textSecondary }]} numberOfLines={1}>
-            {link.url}
+            {isLocalImage ? 'Image from device' : link.url}
           </Text>
           
           {link.description ? (
@@ -120,12 +122,14 @@ export default function LinkCard({ link }: LinkCardProps) {
             )}
           </TouchableOpacity>
           
-          <TouchableOpacity 
-            style={styles.actionButton}
-            onPress={handleOpenExternal}
-          >
-            <ExternalLink size={20} color={colors.primary} />
-          </TouchableOpacity>
+          {!isLocalImage && link.url && (
+            <TouchableOpacity 
+              style={styles.actionButton}
+              onPress={handleOpenExternal}
+            >
+              <ExternalLink size={20} color={colors.primary} />
+            </TouchableOpacity>
+          )}
         </View>
       </TouchableOpacity>
     </Animated.View>

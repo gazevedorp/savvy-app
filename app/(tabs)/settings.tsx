@@ -73,14 +73,14 @@ export default function SettingsScreen() {
           isSwitch={false}
           value={null}
         />
-        <SettingItem
+        {/* <SettingItem
           icon={<Share2 size={22} color={colors.primary} />}
           title="Export Data"
           description="Export your links and categories"
           action={() => {}}
           isSwitch={false}
           value={null}
-        />
+        /> */}
       </View>
 
       <View style={styles.section}>

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, FlatList, TextInput } from 'react-native';
+import { View, StyleSheet, FlatList, TextInput, Text } from 'react-native';
 import { useLinkStore } from '@/store/linkStore';
 import LinkCard from '@/components/ui/LinkCard';
 import { useTheme } from '@/context/ThemeContext';
@@ -7,7 +7,7 @@ import { Search as SearchIcon, X } from 'lucide-react-native';
 import EmptyState from '@/components/ui/EmptyState';
 import { Link } from '@/types';
 import Animated, { FadeIn, FadeOut } from 'react-native-reanimated';
-import { TouchableOpacity } from 'react-native-gesture-handler';
+import { TouchableOpacity } from 'react-native';
 
 export default function SearchScreen() {
   const { colors } = useTheme();
@@ -21,14 +21,14 @@ export default function SearchScreen() {
       return;
     }
 
-    const filtered = links.filter(
+    const filteredByText = links.filter(
       link =>
         link.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
         link.url.toLowerCase().includes(searchQuery.toLowerCase()) ||
         (link.description && link.description.toLowerCase().includes(searchQuery.toLowerCase()))
     );
     
-    setResults(filtered);
+    setResults(filteredByText);
   }, [searchQuery, links]);
 
   const renderItem = ({ item }: { item: Link }) => (

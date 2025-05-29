@@ -23,7 +23,7 @@ const DEFAULT_CATEGORIES: Category[] = [
   },
   {
     id: 'cat-2',
-    name: 'Videos',
+    name: 'Tecnology',
     color: '#FF2D55',
     createdAt: new Date().toISOString(),
   },

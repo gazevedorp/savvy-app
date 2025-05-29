@@ -2,7 +2,7 @@ import React from 'react';
 import { View, StyleSheet, Text, TouchableOpacity } from 'react-native';
 import { LinkType } from '@/types';
 import { useTheme } from '@/context/ThemeContext';
-import { FileText, Video, Headphones, Image as ImageIcon, File, HelpCircle } from 'lucide-react-native';
+import { Link as LinkIconLucide, Video, Headphones, Image as ImageIcon, FileText, Type } from 'lucide-react-native';
 
 interface TypeSelectorProps {
   selectedType: LinkType;
@@ -14,9 +14,9 @@ export default function TypeSelector({ selectedType, onSelectType }: TypeSelecto
   
   const types: { type: LinkType; label: string; icon: React.ReactNode; color: string }[] = [
     {
-      type: 'article',
-      label: 'Article',
-      icon: <FileText size={20} color={selectedType === 'article' ? '#fff' : colors.primary} />,
+      type: 'link',
+      label: 'Link',
+      icon: <LinkIconLucide size={20} color={selectedType === 'link' ? '#fff' : colors.primary} />,
       color: colors.primary,
     },
     {
@@ -26,28 +26,22 @@ export default function TypeSelector({ selectedType, onSelectType }: TypeSelecto
       color: '#FF2D55',
     },
     {
-      type: 'podcast',
-      label: 'Podcast',
-      icon: <Headphones size={20} color={selectedType === 'podcast' ? '#fff' : '#5856D6'} />,
-      color: '#5856D6',
-    },
-    {
       type: 'image',
       label: 'Image',
       icon: <ImageIcon size={20} color={selectedType === 'image' ? '#fff' : '#34C759'} />,
       color: '#34C759',
     },
     {
-      type: 'document',
-      label: 'Document',
-      icon: <File size={20} color={selectedType === 'document' ? '#fff' : '#FF9500'} />,
-      color: '#FF9500',
+      type: 'music',
+      label: 'Music',
+      icon: <Headphones size={20} color={selectedType === 'music' ? '#fff' : '#5856D6'} />,
+      color: '#5856D6',
     },
     {
-      type: 'other',
-      label: 'Other',
-      icon: <HelpCircle size={20} color={selectedType === 'other' ? '#fff' : colors.secondary} />,
-      color: colors.secondary,
+      type: 'text',
+      label: 'Text',
+      icon: <FileText size={20} color={selectedType === 'text' ? '#fff' : '#FF9500'} />,
+      color: '#FF9500',
     },
   ];
 

@@ -7,7 +7,7 @@ interface WebViewProps {
   style?: object;
 }
 
-export default function WebView({ url, style }: WebViewProps) {
+export default function WebView({ url, style, ...rest }: WebViewProps) {
   // On web, we'll use an iframe instead of the WebView component
   if (Platform.OS === 'web') {
     return (
@@ -36,6 +36,7 @@ export default function WebView({ url, style }: WebViewProps) {
         domStorageEnabled={true}
         startInLoadingState={true}
         scalesPageToFit={true}
+        {...rest}
       />
     </View>
   );

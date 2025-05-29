@@ -64,7 +64,7 @@ export default function CategoriesScreen() {
           styles.addButton,
           {
             backgroundColor: colors.primary,
-            bottom: 24 + insets.bottom
+            bottom: 12 + insets.bottom
           }
         ]}
         onPress={() => setModalVisible(true)}

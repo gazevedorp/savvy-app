@@ -35,8 +35,7 @@ export default function CategoryCard({ category, linkCount, width }: CategoryCar
           }
         ]}
         onPress={() => {
-          // Navigate to filtered links for this category
-          router.push(`/`);
+          router.push({ pathname: '/', params: { categoryId: category.id, categoryName: category.name } });
         }}
       >
         <Text style={[styles.name, { color: textColor }]} numberOfLines={1}>

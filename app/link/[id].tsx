@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, StyleSheet, Text, ScrollView, TouchableOpacity, Linking, Share } from 'react-native';
+import { View, StyleSheet, Text, ScrollView, TouchableOpacity, Linking, Share, Image, Platform } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useLinkStore } from '@/store/linkStore';
 import { useTheme } from '@/context/ThemeContext';
@@ -77,6 +77,8 @@ export default function LinkDetailScreen() {
     );
   }
 
+  const isLocalImage = link.type === 'image' && link.url.startsWith('file://');
+
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <View style={[styles.header, { backgroundColor: colors.background, borderBottomColor: colors.border }]}>
@@ -92,13 +94,15 @@ export default function LinkDetailScreen() {
         <View style={[styles.linkCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
           <Text style={[styles.title, { color: colors.text }]}>{link.title}</Text>
           
-          <Text 
-            style={[styles.url, { color: colors.primary }]} 
-            numberOfLines={1}
-            onPress={handleOpenLink}
-          >
-            {link.url}
-          </Text>
+          {!isLocalImage && link.url && (
+            <Text 
+              style={[styles.url, { color: colors.primary }]} 
+              numberOfLines={1}
+              onPress={handleOpenLink}
+            >
+              {link.url}
+            </Text>
+          )}
           
           {link.description && (
             <Text style={[styles.description, { color: colors.text }]}>
@@ -128,12 +132,29 @@ export default function LinkDetailScreen() {
           </View>
         </View>
         
-        <View style={[styles.previewContainer, { backgroundColor: colors.card, borderColor: colors.border }]}>
-          <Text style={[styles.previewTitle, { color: colors.textSecondary }]}>
-            Preview
-          </Text>
-          <WebView url={link.url} style={styles.webView} />
-        </View>
+        {isLocalImage ? (
+          <View style={[styles.imagePreviewContainer, { backgroundColor: colors.card, borderColor: colors.border }]}>
+            <Image source={{ uri: link.url }} style={styles.localImagePreview} resizeMode="contain" />
+          </View>
+        ) : link.url ? ( // Only show WebView if there's a URL and it's not a local image
+          <View style={[styles.previewContainer, { backgroundColor: colors.card, borderColor: colors.border }]}>
+            <Text style={[styles.previewTitle, { color: colors.textSecondary, borderBottomColor: colors.border }]}>
+              Preview
+            </Text>
+            <WebView // Este é o seu componente customizado de @/components/WebView
+              url={link.url}
+              style={styles.webView}
+              // Props padrão para interatividade.
+              // É crucial que seu componente @/components/WebView repasse estas props.
+              javaScriptEnabled={true}
+              domStorageEnabled={true}
+              {...(Platform.OS === 'android' && { nestedScrollEnabled: true })}
+            />
+          </View>
+        ) : (
+          // Optionally, show something if there's no URL and it's not an image (e.g., for 'text' type)
+          <View style={styles.noPreviewContainer} />
+        )}
       </ScrollView>
       
       <View style={[styles.actionBar, { backgroundColor: colors.background, borderTopColor: colors.border }]}>
@@ -148,13 +169,15 @@ export default function LinkDetailScreen() {
           )}
         </TouchableOpacity>
         
-        <TouchableOpacity
-          style={styles.actionButton}
-          onPress={handleOpenLink}
-        >
-          <ExternalLink size={24} color={colors.primary} />
-        </TouchableOpacity>
-        
+        {!isLocalImage && link.url && (
+          <TouchableOpacity
+            style={styles.actionButton}
+            onPress={handleOpenLink}
+          >
+            <ExternalLink size={24} color={colors.primary} />
+          </TouchableOpacity>
+        )}
+
         <TouchableOpacity
           style={styles.actionButton}
           onPress={handleShareLink}
@@ -283,7 +306,19 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
   },
   webView: {
-    height: 400,
+    height: 350, // Adjusted height for webview
+  },
+  imagePreviewContainer: {
+    borderRadius: 12,
+    borderWidth: 1,
+    overflow: 'hidden',
+    marginBottom: 100, // Keep consistent bottom margin
+    padding: 8, // Add some padding around the image
+  },
+  localImagePreview: {
+    width: '100%',
+    height: 300, // Adjust as needed, or make it dynamic
+    borderRadius: 8,
   },
   actionBar: {
     flexDirection: 'row',
@@ -307,4 +342,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginTop: 24,
   },
+  noPreviewContainer: {
+    marginBottom: 100, // To ensure content doesn't hide behind action bar
+  }
 });

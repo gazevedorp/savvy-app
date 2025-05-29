@@ -38,7 +38,7 @@ export default function AddLinkButton() {
         activeOpacity={1}
       >
         <Plus size={24} color="#FFFFFF" />
-        <Text style={styles.buttonText}>Add Link</Text>
+        <Text style={styles.buttonText}>Add Savvy</Text>
       </TouchableOpacity>
     </Animated.View>
   );

@@ -1,5 +1,5 @@
 // Link Types
-export type LinkType = 'article' | 'video' | 'podcast' | 'image' | 'document' | 'other';
+export type LinkType = 'link' | 'video' | 'image' | 'music' | 'text';
 
 export interface Link {
   id: string;
