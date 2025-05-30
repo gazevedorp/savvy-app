@@ -83,15 +83,6 @@ export default function LinkCard({ link }: LinkCardProps) {
             {isLocalImage ? 'Image from device' : link.url}
           </Text>
           
-          {link.description ? (
-            <Text 
-              style={[styles.description, { color: colors.text }]} 
-              numberOfLines={2}
-            >
-              {link.description}
-            </Text>
-          ) : null}
-          
           <View style={styles.footer}>
             <View 
               style={[

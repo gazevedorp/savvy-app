@@ -36,7 +36,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="index"
         options={{
-          title: "SAVVY",
+          title: "SAVVY READ LATER",
           tabBarLabel: 'Links',
           tabBarIcon: ({ color, size }) => (
             <Bookmark size={size} color={color} />

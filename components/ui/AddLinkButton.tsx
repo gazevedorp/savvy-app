@@ -38,7 +38,6 @@ export default function AddLinkButton() {
         activeOpacity={1}
       >
         <Plus size={24} color="#FFFFFF" />
-        <Text style={styles.buttonText}>Add Savvy</Text>
       </TouchableOpacity>
     </Animated.View>
   );
@@ -56,16 +55,10 @@ const styles = StyleSheet.create({
     elevation: 5,
   },
   button: {
-    flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 12,
-    paddingHorizontal: 20,
-    borderRadius: 28,
-  },
-  buttonText: {
-    color: '#FFFFFF',
-    fontFamily: 'Inter-Medium',
-    fontSize: 16,
-    marginLeft: 8,
+    justifyContent: 'center',
+    width: 56, // Define a largura
+    height: 56, // Define a altura (igual à largura para ser um círculo)
+    borderRadius: 28, // Metade da largura/altura para ser totalmente redondo
   },
 });

@@ -11,6 +11,7 @@ interface CategoryState {
   addCategory: (category: Partial<Category>) => Promise<Category>;
   updateCategory: (id: string, data: Partial<Category>) => Promise<void>;
   deleteCategory: (id: string) => Promise<void>;
+  clearAllCategories: () => Promise<void>; // Add this line
 }
 
 // Default categories with predefined colors
@@ -35,7 +36,7 @@ const DEFAULT_CATEGORIES: Category[] = [
   },
   {
     id: 'cat-4',
-    name: 'Recipes',
+    name: 'Business',
     color: '#FF9500',
     createdAt: new Date().toISOString(),
   },
@@ -49,21 +50,28 @@ export const useCategoryStore = create<CategoryState>((set, get) => ({
   fetchCategories: async () => {
     set({ isLoading: true, error: null });
     try {
-      let storedCategories = await loadFromStorage('categories');
-      
-      // Initialize with default categories if none exist
-      if (!storedCategories || storedCategories.length === 0) {
-        storedCategories = DEFAULT_CATEGORIES;
-        await saveToStorage('categories', storedCategories);
+      const loadedData = await loadFromStorage('categories'); // loadedData is potentially 'unknown'
+      let categoriesToSet: Category[];
+
+      // Check if loadedData is a non-empty array.
+      // We assume if it's an array, its elements are of type Category.
+      // For more robust safety, you could add runtime validation for each element's structure.
+      if (Array.isArray(loadedData) && loadedData.length > 0) {
+        // If data from storage is a non-empty array, we assume it's our Category array.
+        categoriesToSet = loadedData as Category[]; // Cast to Category[] after checking it's an array
+      } else {
+        // If no stored categories, data is not an array, or it's an empty array,
+        // initialize with default categories and save them.
+        categoriesToSet = DEFAULT_CATEGORIES;
+        await saveToStorage('categories', categoriesToSet);
       }
-      
-      set({ categories: storedCategories, isLoading: false });
+      set({ categories: categoriesToSet, isLoading: false });
     } catch (error) {
       set({ error: 'Failed to load categories', isLoading: false });
       console.error('Error loading categories:', error);
     }
   },
-  
+
   addCategory: async (categoryData: Partial<Category>) => {
     const newCategory: Category = {
       id: generateId(),
@@ -98,5 +106,11 @@ export const useCategoryStore = create<CategoryState>((set, get) => ({
       saveToStorage('categories', updatedCategories);
       return { categories: updatedCategories };
     });
+  },
+
+  clearAllCategories: async () => {
+    await saveToStorage('categories', []); // Clear from storage
+    set({ categories: [], isLoading: false, error: null }); // Reset state
+    console.log('All categories cleared');
   },
 }));

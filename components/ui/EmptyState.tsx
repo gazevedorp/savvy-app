@@ -62,13 +62,13 @@ const styles = StyleSheet.create({
   },
   title: {
     fontFamily: 'Inter-Bold',
-    fontSize: 20,
+    fontSize: 18,
     marginBottom: 8,
     textAlign: 'center',
   },
   description: {
     fontFamily: 'Inter-Regular',
-    fontSize: 16,
+    fontSize: 14,
     textAlign: 'center',
     maxWidth: 300,
     lineHeight: 24,

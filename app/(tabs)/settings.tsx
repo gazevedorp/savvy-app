@@ -3,6 +3,7 @@ import { View, StyleSheet, Text, TouchableOpacity, Switch, ScrollView } from 're
 import { useTheme } from '@/context/ThemeContext';
 import { Moon, Sun, Trash2, Share2, Bookmark, Info, ExternalLink } from 'lucide-react-native';
 import { useLinkStore } from '@/store/linkStore';
+import { useCategoryStore } from '@/store/categoryStore'; // Import useCategoryStore
 import { useRouter } from 'expo-router';
 import ConfirmationModal from '@/components/modals/ConfirmationModal';
 import { useState } from 'react';
@@ -10,15 +11,26 @@ import { useState } from 'react';
 export default function SettingsScreen() {
   const { theme, toggleTheme, colors } = useTheme();
   const { clearAllLinks } = useLinkStore();
+  const { clearAllCategories } = useCategoryStore(); // Get clearAllCategories
   const [showClearModal, setShowClearModal] = useState(false);
   const router = useRouter();
 
   const handleClearData = () => {
     clearAllLinks();
+    clearAllCategories(); // Add this line to clear categories
     setShowClearModal(false);
   };
 
-  const SettingItem = ({ icon, title, description, action, isSwitch, value }) => (
+  interface SettingItemProps {
+    icon: React.ReactNode;
+    title: string;
+    description?: string; // Optional description
+    action: () => void;
+    isSwitch: boolean;
+    value: boolean | null; // Can be boolean for switch or null for others
+  }
+
+  const SettingItem: React.FC<SettingItemProps> = ({ icon, title, description, action, isSwitch, value }) => (
     <TouchableOpacity 
       style={[styles.settingItem, { borderBottomColor: colors.border }]}
       onPress={isSwitch ? null : action}
@@ -93,13 +105,6 @@ export default function SettingsScreen() {
           isSwitch={false}
           value={null}
         />
-        <SettingItem
-          icon={<ExternalLink size={22} color={colors.primary} />}
-          title="Privacy Policy"
-          action={() => {}}
-          isSwitch={false}
-          value={null}
-        />
       </View>
 
       <Text style={[styles.footerText, { color: colors.textSecondary }]}>
@@ -110,7 +115,7 @@ export default function SettingsScreen() {
         visible={showClearModal}
         title="Clear All Data"
         message="This will permanently delete all your saved links and categories. This action cannot be undone."
-        confirmText="Delete Everything"
+        confirmText="Delete"
         cancelText="Cancel"
         onConfirm={handleClearData}
         onCancel={() => setShowClearModal(false)}
