@@ -1,20 +1,22 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Modal, View, StyleSheet, Text, TextInput, TouchableOpacity } from 'react-native';
 import { useTheme } from '@/context/ThemeContext';
-import { useCategoryStore } from '@/store/categoryStore';
 import { X, Check } from 'lucide-react-native';
+import { Category } from '@/types';
 
 interface AddCategoryModalProps {
   visible: boolean;
   onClose: () => void;
+  onSave: (data: { name: string; color: string; icon?: string }) => void; // Generic save handler
+  categoryToEdit?: Category | null;
 }
 
-export default function AddCategoryModal({ visible, onClose }: AddCategoryModalProps) {
+export default function AddCategoryModal({ visible, onClose, onSave, categoryToEdit }: AddCategoryModalProps) {
   const { colors } = useTheme();
-  const { addCategory } = useCategoryStore();
   
   const [name, setName] = useState('');
   const [selectedColor, setSelectedColor] = useState('#0A84FF');
+  const [isEditing, setIsEditing] = useState(false);
   
   const colorOptions = [
     '#0A84FF', // Blue
@@ -27,17 +29,32 @@ export default function AddCategoryModal({ visible, onClose }: AddCategoryModalP
     '#AF52DE', // Magenta
   ];
 
+  useEffect(() => {
+    if (categoryToEdit) {
+      setName(categoryToEdit.name);
+      setSelectedColor(categoryToEdit.color || '#0A84FF');
+      setIsEditing(true);
+    } else {
+      setName('');
+      setSelectedColor('#0A84FF'); // Reset to default for new category
+      setIsEditing(false);
+    }
+  }, [categoryToEdit, visible]); // Re-run when categoryToEdit changes or modal becomes visible
+
   const handleSave = async () => {
     if (name.trim() === '') return;
     
-    await addCategory({
+    onSave({ // Call the onSave prop passed from parent
       name: name.trim(),
       color: selectedColor,
+      // icon: "some-icon" // If you add icon selection in the future
     });
     
-    setName('');
-    setSelectedColor('#0A84FF');
-    onClose();
+    // Parent (CategoriesScreen) will handle closing and resetting its own state.
+    // No need to call onClose() directly here if parent does it after save.
+    // However, if onSave is async and parent doesn't close immediately,
+    // you might want to keep onClose() or let parent handle it.
+    // For now, assuming parent handles close via its onSave implementation.
   };
 
   return (
@@ -54,7 +71,7 @@ export default function AddCategoryModal({ visible, onClose }: AddCategoryModalP
               <X size={24} color={colors.text} />
             </TouchableOpacity>
             <Text style={[styles.title, { color: colors.text }]}>
-              New Category
+              {isEditing ? 'Edit Category' : 'New Category'}
             </Text>
             <TouchableOpacity 
               onPress={handleSave} 

@@ -1,12 +1,19 @@
-import React from 'react';
-import { View, StyleSheet, Text, TouchableOpacity, Image } from 'react-native';
-import { Link } from '@/types';
-import { useTheme } from '@/context/ThemeContext';
-import { useRouter } from 'expo-router';
-import { Check, ExternalLink, Clock } from 'lucide-react-native';
-import { formatRelativeTime } from '@/utils/dateUtils';
-import Animated, { FadeIn } from 'react-native-reanimated';
-import { useLinkStore } from '@/store/linkStore';
+import React from "react";
+import {
+  View,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  Image,
+  Linking,
+} from "react-native";
+import { Link } from "@/types";
+import { useTheme } from "@/context/ThemeContext";
+import { useRouter } from "expo-router";
+import { Check, ExternalLink, Clock } from "lucide-react-native";
+import { formatRelativeTime } from "@/utils/dateUtils";
+import Animated, { FadeIn } from "react-native-reanimated";
+import { useLinkStore } from "@/store/linkStore";
 
 interface LinkCardProps {
   link: Link;
@@ -16,62 +23,68 @@ export default function LinkCard({ link }: LinkCardProps) {
   const { colors } = useTheme();
   const router = useRouter();
   const { updateLink } = useLinkStore();
-  
+
   const handlePress = () => {
     router.push(`/link/${link.id}`);
   };
-  
+
   const handleToggleRead = (e: Event) => {
     e.stopPropagation();
     updateLink(link.id, { isRead: !link.isRead });
   };
-  
-  const handleOpenExternal = (e: Event) => {
-    e.stopPropagation();
-    // This would use Linking in a real implementation
-    console.log(`Opening ${link.url} externally`);
-  };
-  
+
   const getTypeLabel = () => {
     return link.type.charAt(0).toUpperCase() + link.type.slice(1);
   };
-  
+
   const getTypeColor = () => {
     switch (link.type) {
-      case 'link': return colors.primary;
-      case 'video': return '#FF2D55';
-      case 'image': return '#34C759'; // Green
-      case 'music': return '#5856D6'; // Purple
-      case 'text': return '#FF9500'; // Orange
-      default: return colors.secondary;
+      case "link":
+        return colors.primary;
+      case "video":
+        return "#FF2D55";
+      case "image":
+        return "#34C759"; // Green
+      case "music":
+        return "#5856D6"; // Purple
+      case "text":
+        return "#FF9500"; // Orange
+      default:
+        return colors.secondary;
     }
   };
 
-  const isLocalImage = link.type === 'image' && link.url.startsWith('file://');
+  const handleOpenLink = async () => {
+    if (link?.url) {
+      await Linking.openURL(link.url);
+    }
+  };
+
+  const isLocalImage = link.type === "image" && link.url.startsWith("file://");
 
   return (
     <Animated.View entering={FadeIn.duration(300).delay(100)}>
       <TouchableOpacity
         style={[
-          styles.container, 
-          { 
+          styles.container,
+          {
             backgroundColor: colors.card,
             borderColor: colors.border,
             opacity: link.isRead ? 0.8 : 1,
-          }
+          },
         ]}
         onPress={handlePress}
         activeOpacity={0.8}
       >
         <View style={styles.contentContainer}>
           <View style={styles.titleRow}>
-            <Text 
+            <Text
               style={[
-                styles.title, 
-                { 
+                styles.title,
+                {
                   color: colors.text,
-                  textDecorationLine: link.isRead ? 'line-through' : 'none',
-                }
+                  textDecorationLine: link.isRead ? "line-through" : "none",
+                },
               ]}
               numberOfLines={2}
             >
@@ -79,30 +92,33 @@ export default function LinkCard({ link }: LinkCardProps) {
             </Text>
           </View>
 
-          <Text style={[styles.url, { color: colors.textSecondary }]} numberOfLines={1}>
-            {isLocalImage ? 'Image from device' : link.url}
+          <Text
+            style={[styles.url, { color: colors.textSecondary }]}
+            numberOfLines={1}
+          >
+            {isLocalImage ? "Image from device" : link.url}
           </Text>
-          
+
           <View style={styles.footer}>
-            <View 
+            <View
               style={[
-                styles.typeTag, 
-                { backgroundColor: getTypeColor() + '20' }
+                styles.typeTag,
+                { backgroundColor: getTypeColor() + "20" },
               ]}
             >
               <Text style={[styles.typeText, { color: getTypeColor() }]}>
                 {getTypeLabel()}
               </Text>
             </View>
-            
+
             <Text style={[styles.time, { color: colors.textSecondary }]}>
               {formatRelativeTime(link.createdAt)}
             </Text>
           </View>
         </View>
-        
+
         <View style={styles.actions}>
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.actionButton}
             onPress={handleToggleRead}
           >
@@ -112,11 +128,11 @@ export default function LinkCard({ link }: LinkCardProps) {
               <Clock size={20} color={colors.textSecondary} />
             )}
           </TouchableOpacity>
-          
+
           {!isLocalImage && link.url && (
-            <TouchableOpacity 
+            <TouchableOpacity
               style={styles.actionButton}
-              onPress={handleOpenExternal}
+              onPress={handleOpenLink}
             >
               <ExternalLink size={20} color={colors.primary} />
             </TouchableOpacity>
@@ -132,38 +148,38 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: 16,
     marginBottom: 16,
-    flexDirection: 'row',
+    flexDirection: "row",
     borderWidth: 1,
   },
   contentContainer: {
     flex: 1,
   },
   titleRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
   },
   title: {
-    fontFamily: 'Inter-Bold',
+    fontFamily: "Inter-Bold",
     fontSize: 16,
     marginBottom: 4,
     flex: 1,
   },
   url: {
-    fontFamily: 'Inter-Regular',
+    fontFamily: "Inter-Regular",
     fontSize: 13,
     marginBottom: 8,
   },
   description: {
-    fontFamily: 'Inter-Regular',
+    fontFamily: "Inter-Regular",
     fontSize: 14,
     marginBottom: 12,
     lineHeight: 20,
   },
   footer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
   },
   typeTag: {
     paddingHorizontal: 8,
@@ -171,22 +187,22 @@ const styles = StyleSheet.create({
     borderRadius: 12,
   },
   typeText: {
-    fontFamily: 'Inter-Medium',
+    fontFamily: "Inter-Medium",
     fontSize: 12,
   },
   time: {
-    fontFamily: 'Inter-Regular',
+    fontFamily: "Inter-Regular",
     fontSize: 12,
   },
   actions: {
-    justifyContent: 'space-between',
+    justifyContent: "space-between",
     marginLeft: 12,
   },
   actionButton: {
     width: 36,
     height: 36,
     borderRadius: 18,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
 });

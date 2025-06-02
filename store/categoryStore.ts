@@ -1,7 +1,7 @@
-import { create } from 'zustand';
-import { Category } from '@/types';
-import { generateId } from '@/utils/idGenerator';
-import { loadFromStorage, saveToStorage } from '@/utils/storage';
+import { create } from "zustand";
+import { Category } from "@/types";
+import { generateId } from "@/utils/idGenerator";
+import { loadFromStorage, saveToStorage } from "@/utils/storage";
 
 interface CategoryState {
   categories: Category[];
@@ -12,32 +12,33 @@ interface CategoryState {
   updateCategory: (id: string, data: Partial<Category>) => Promise<void>;
   deleteCategory: (id: string) => Promise<void>;
   clearAllCategories: () => Promise<void>; // Add this line
+  editCategory: (id: string, name: string, color?: string) => Promise<void>;
 }
 
 // Default categories with predefined colors
 const DEFAULT_CATEGORIES: Category[] = [
   {
-    id: 'cat-1',
-    name: 'Articles',
-    color: '#0A84FF',
+    id: "cat-1",
+    name: "Articles",
+    color: "#0A84FF",
     createdAt: new Date().toISOString(),
   },
   {
-    id: 'cat-2',
-    name: 'Tecnology',
-    color: '#FF2D55',
+    id: "cat-2",
+    name: "Tecnology",
+    color: "#FF2D55",
     createdAt: new Date().toISOString(),
   },
   {
-    id: 'cat-3',
-    name: 'Tutorials',
-    color: '#5856D6',
+    id: "cat-3",
+    name: "Tutorials",
+    color: "#5856D6",
     createdAt: new Date().toISOString(),
   },
   {
-    id: 'cat-4',
-    name: 'Business',
-    color: '#FF9500',
+    id: "cat-4",
+    name: "Business",
+    color: "#FF9500",
     createdAt: new Date().toISOString(),
   },
 ];
@@ -46,11 +47,11 @@ export const useCategoryStore = create<CategoryState>((set, get) => ({
   categories: [],
   isLoading: false,
   error: null,
-  
+
   fetchCategories: async () => {
     set({ isLoading: true, error: null });
     try {
-      const loadedData = await loadFromStorage('categories'); // loadedData is potentially 'unknown'
+      const loadedData = await loadFromStorage("categories"); // loadedData is potentially 'unknown'
       let categoriesToSet: Category[];
 
       // Check if loadedData is a non-empty array.
@@ -63,54 +64,68 @@ export const useCategoryStore = create<CategoryState>((set, get) => ({
         // If no stored categories, data is not an array, or it's an empty array,
         // initialize with default categories and save them.
         categoriesToSet = DEFAULT_CATEGORIES;
-        await saveToStorage('categories', categoriesToSet);
+        await saveToStorage("categories", categoriesToSet);
       }
       set({ categories: categoriesToSet, isLoading: false });
     } catch (error) {
-      set({ error: 'Failed to load categories', isLoading: false });
-      console.error('Error loading categories:', error);
+      set({ error: "Failed to load categories", isLoading: false });
+      console.error("Error loading categories:", error);
     }
   },
 
   addCategory: async (categoryData: Partial<Category>) => {
     const newCategory: Category = {
       id: generateId(),
-      name: categoryData.name || 'New Category',
-      color: categoryData.color || '#0A84FF',
+      name: categoryData.name || "New Category",
+      color: categoryData.color || "#0A84FF",
       icon: categoryData.icon,
       createdAt: new Date().toISOString(),
     };
-    
-    set(state => {
+
+    set((state) => {
       const updatedCategories = [...state.categories, newCategory];
-      saveToStorage('categories', updatedCategories);
+      saveToStorage("categories", updatedCategories);
       return { categories: updatedCategories };
     });
-    
+
     return newCategory;
   },
-  
+
   updateCategory: async (id: string, data: Partial<Category>) => {
-    set(state => {
-      const updatedCategories = state.categories.map(category => 
+    set((state) => {
+      const updatedCategories = state.categories.map((category) =>
         category.id === id ? { ...category, ...data } : category
       );
-      saveToStorage('categories', updatedCategories);
-      return { categories: updatedCategories };
-    });
-  },
-  
-  deleteCategory: async (id: string) => {
-    set(state => {
-      const updatedCategories = state.categories.filter(category => category.id !== id);
-      saveToStorage('categories', updatedCategories);
+      saveToStorage("categories", updatedCategories);
       return { categories: updatedCategories };
     });
   },
 
   clearAllCategories: async () => {
-    await saveToStorage('categories', []); // Clear from storage
+    await saveToStorage("categories", []); // Clear from storage
     set({ categories: [], isLoading: false, error: null }); // Reset state
-    console.log('All categories cleared');
+    console.log("All categories cleared");
+  },
+
+  editCategory: async (id: string, name: string, color?: string) => {
+    // Your logic to update the category (e.g., in AsyncStorage, API call)
+    set((state) => {
+      const updatedCategories = state.categories.map((cat) =>
+        cat.id === id ? { ...cat, name, color: color || cat.color } : cat
+      );
+      saveToStorage("categories", updatedCategories);
+      return { categories: updatedCategories };
+    });
+  },
+
+  deleteCategory: async (id: string) => {
+    // Your logic to delete the category
+    set((state) => {
+      const updatedCategories = state.categories.filter(
+        (cat) => cat.id !== id
+      );
+      saveToStorage("categories", updatedCategories);
+      return { categories: updatedCategories };
+    });
   },
 }));

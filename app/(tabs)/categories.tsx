@@ -8,12 +8,17 @@ import EmptyState from '@/components/ui/EmptyState';
 import { Plus } from 'lucide-react-native';
 import AddCategoryModal from '@/components/modals/AddCategoryModal';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Category } from '@/types';
+import DeleteCategoryOptionsModal from '@/components/modals/DeleteCategoryOptionsModal';
 
 export default function CategoriesScreen() {
   const { colors } = useTheme();
-  const { categories, fetchCategories } = useCategoryStore();
-  const { links } = useLinkStore();
-  const [modalVisible, setModalVisible] = useState(false);
+  const { categories, fetchCategories, addCategory, editCategory, deleteCategory } = useCategoryStore();
+  const { links, removeCategoryFromAssociatedLinks, deleteLinksAssociatedWithCategory } = useLinkStore();
+  const [isAddEditModalVisible, setIsAddEditModalVisible] = useState(false);
+  const [editingCategory, setEditingCategory] = useState<Category | null>(null);
+  const [deletingCategory, setDeletingCategory] = useState<Category | null>(null);
+  const [isDeleteOptionsModalVisible, setIsDeleteOptionsModalVisible] = useState(false);
   const { width } = useWindowDimensions();
   const insets = useSafeAreaInsets();
 
@@ -23,17 +28,83 @@ export default function CategoriesScreen() {
   useEffect(() => {
     fetchCategories();
   }, [fetchCategories]);
-
-  // Count links per category
+  
   const getCategoryLinkCount = (categoryId: string) => {
     return links.filter(link => link.categoryIds.includes(categoryId)).length;
   };
 
-  const renderItem = ({ item }) => (
-    <CategoryCard 
-      category={item} 
+  const handleOpenAddModal = () => {
+    setEditingCategory(null);
+    setIsAddEditModalVisible(true);
+  };
+
+  const handleOpenEditModal = (category: Category) => {
+    setEditingCategory(category);
+    setIsAddEditModalVisible(true);
+  };
+
+  const handleCloseAddEditModal = () => {
+    setIsAddEditModalVisible(false);
+    setEditingCategory(null);
+  };
+
+  const handleOpenDeleteModal = (category: Category) => {
+    setDeletingCategory(category);
+    setIsDeleteOptionsModalVisible(true);
+  };
+
+  const handleCloseDeleteModal = () => {
+    setIsDeleteOptionsModalVisible(false);
+    setDeletingCategory(null);
+  };
+
+  const handleDeleteCategoryOnly = async () => {
+    if (!deletingCategory) return;
+    try {
+      await removeCategoryFromAssociatedLinks(deletingCategory.id);
+      await deleteCategory(deletingCategory.id);
+      // fetchCategories(); // Store updates should trigger re-render, but explicit fetch can be a fallback
+    } catch (error) {
+      console.error("Error deleting category only:", error);
+    }
+    handleCloseDeleteModal();
+  };
+
+  const handleDeleteCategoryAndLinks = async () => {
+    if (!deletingCategory) return;
+    try {
+      await deleteLinksAssociatedWithCategory(deletingCategory.id);
+      await deleteCategory(deletingCategory.id);
+      // fetchCategories(); // Store updates should trigger re-render
+    } catch (error) {
+      console.error("Error deleting category and links:", error);
+    }
+    handleCloseDeleteModal();
+  };
+
+  const handleSaveCategory = async (data: { name: string; color?: string; icon?: string }) => {
+    try {
+      if (editingCategory) {
+        await editCategory(editingCategory.id, data.name, data.color);
+      } else {
+        await addCategory({ name: data.name, color: data.color, icon: data.icon });
+      }
+      // fetchCategories(); // Store updates should trigger re-render
+    } catch (error) {
+      console.error("Failed to save category:", error);
+      // Optionally, show an error message to the user
+    }
+    handleCloseAddEditModal();
+  };
+
+  const renderItem = ({ item }: { item: Category }) => (
+    <CategoryCard
+      category={item}
       linkCount={getCategoryLinkCount(item.id)}
       width={cardWidth}
+      onEdit={() => handleOpenEditModal(item)}
+      onDelete={() => handleOpenDeleteModal(item)}
+      // onPress={() => router.push({ pathname: '/', params: { categoryId: item.id, categoryName: item.name }})} // Example navigation
     />
   );
 
@@ -46,16 +117,17 @@ export default function CategoriesScreen() {
           keyExtractor={(item) => item.id}
           contentContainerStyle={[
             styles.listContent,
-            { paddingBottom: insets.bottom + 100 }
+            { paddingBottom: insets.bottom + 100 } // Ensure space for FAB and tab bar
           ]}
           numColumns={numColumns}
           columnWrapperStyle={styles.columnWrapper}
+          showsVerticalScrollIndicator={false}
         />
       ) : (
         <EmptyState
           title="No categories yet"
           description="Create categories to organize your saved links."
-          icon="FolderPlus"
+          icon="FolderPlus" // Make sure this icon exists in your EmptyState component
         />
       )}
 
@@ -64,18 +136,32 @@ export default function CategoriesScreen() {
           styles.addButton,
           {
             backgroundColor: colors.primary,
-            bottom: 12 + insets.bottom
+            bottom: 12 + insets.bottom // Adjust based on tab bar height if needed
           }
         ]}
-        onPress={() => setModalVisible(true)}
+        onPress={handleOpenAddModal} // Corrected: Use the handler to open add/edit modal
       >
         <Plus size={24} color="#fff" />
       </TouchableOpacity>
 
+      {/* Modal for Adding or Editing a Category */}
       <AddCategoryModal 
-        visible={modalVisible}
-        onClose={() => setModalVisible(false)}
+        visible={isAddEditModalVisible}
+        onClose={handleCloseAddEditModal}
+        categoryToEdit={editingCategory}
+        onSave={handleSaveCategory} // Pass the combined save handler
       />
+
+      {/* Modal for Delete Category Options */}
+      {deletingCategory && (
+        <DeleteCategoryOptionsModal
+          visible={isDeleteOptionsModalVisible}
+          categoryName={deletingCategory.name}
+          onClose={handleCloseDeleteModal}
+          onDeleteCategoryOnly={handleDeleteCategoryOnly}
+          onDeleteCategoryAndLinks={handleDeleteCategoryAndLinks}
+        />
+      )}
     </View>
   );
 }
@@ -88,20 +174,21 @@ const styles = StyleSheet.create({
     padding: 16,
   },
   columnWrapper: {
-    justifyContent: 'flex-start',
-    gap: 16,
-    marginBottom: 16,
+    justifyContent: 'flex-start', // Or 'space-between' if you want space distributed
+    gap: 16, // Spacing between cards in a row
+    marginBottom: 16, // Spacing between rows
   },
   addButton: {
     position: 'absolute',
     right: 24,
+    // bottom: 24, // Will be dynamically set with insets
     width: 56,
     height: 56,
     borderRadius: 28,
     justifyContent: 'center',
     alignItems: 'center',
-    elevation: 4,
-    shadowColor: '#000',
+    elevation: 4, // Android shadow
+    shadowColor: '#000', // iOS shadow
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.25,
     shadowRadius: 3.84,
