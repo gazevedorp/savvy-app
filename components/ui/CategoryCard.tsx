@@ -3,38 +3,35 @@ import { View, StyleSheet, Text, TouchableOpacity } from 'react-native';
 import { Category } from '@/types';
 import { useTheme } from '@/context/ThemeContext';
 import { useRouter } from 'expo-router';
-import { Edit, Trash2 } from 'lucide-react-native'; // Import icons
+// Icons are no longer directly used here
 import Animated, { FadeIn } from 'react-native-reanimated';
 
 interface CategoryCardProps {
   category: Category;
   linkCount: number;
   width: number;
-  onEdit: () => void;
-  onDelete: () => void;
+  onLongPress: (category: Category) => void; // Changed from onEdit/onDelete
 }
 
-export default function CategoryCard({ category, linkCount, width, onEdit, onDelete }: CategoryCardProps) {
+export default function CategoryCard({ category, linkCount, width, onLongPress }: CategoryCardProps) {
   const { colors } = useTheme();
   const router = useRouter();
 
-  // Function to ensure the category color has proper contrast
   const getContrastColor = (hexColor: string): string => {
-    // Simple contrast calculation (could be more sophisticated)
-    return hexColor === '#FFFFFF' || hexColor === '#FFF' ? '#000000' : '#FFFFFF';
+    if (!hexColor || hexColor.length < 7) return '#FFFFFF'; // Default to white for invalid or undefined colors
+    const r = parseInt(hexColor.slice(1, 3), 16);
+    const g = parseInt(hexColor.slice(3, 5), 16);
+    const b = parseInt(hexColor.slice(5, 7), 16);
+    const brightness = Math.round((r * 299 + g * 587 + b * 114) / 1000);
+    return brightness > 125 ? '#000000' : '#FFFFFF';
   };
   
-  // Get text color with good contrast against the category color
   const textColor = getContrastColor(category.color || colors.primary); // Fallback if color is undefined
 
   const handleCardPress = () => {
     router.push({ pathname: '/', params: { categoryId: category.id, categoryName: category.name } });
   };
 
-  const handleEditPress = (e: any) => {
-    e.stopPropagation(); // Prevent card press when edit is pressed
-    onEdit();
-  };
 
   return (
     <Animated.View entering={FadeIn.duration(300)}>
@@ -42,12 +39,14 @@ export default function CategoryCard({ category, linkCount, width, onEdit, onDel
         style={[
           styles.container,
           { 
-            backgroundColor: category.color,
-            width: width, // Ensure width is applied
+            backgroundColor: category.color || colors.primary, // Fallback for category.color
+            width: width,
           }
         ]}
         onPress={handleCardPress}
+        onLongPress={() => onLongPress(category)} // Call onLongPress with the category
         activeOpacity={0.8}
+        delayLongPress={300} // Standard delay for long press
       >
         <View style={styles.content}>
           <Text style={[styles.name, { color: textColor }]} numberOfLines={2}>
@@ -58,17 +57,7 @@ export default function CategoryCard({ category, linkCount, width, onEdit, onDel
             {linkCount} {linkCount === 1 ? 'link' : 'links'}
           </Text>
         </View>
-        <View style={styles.actionsContainer}>
-          <TouchableOpacity onPress={handleEditPress} style={styles.actionButton}>
-            <Edit size={18} color={textColor} />
-          </TouchableOpacity>
-          <TouchableOpacity 
-            onPress={(e) => { e.stopPropagation(); onDelete(); }} // Prevent card press
-            style={styles.actionButton}
-          >
-            <Trash2 size={18} color={textColor} />
-          </TouchableOpacity>
-        </View>
+        {/* Action icons are removed */}
       </TouchableOpacity>
     </Animated.View>
   );
@@ -79,9 +68,6 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: 16,
     height: 100,
-    flexDirection: 'row', // To align content and actions
-    justifyContent: 'space-between', // Pushes content to left, actions to right
-    alignItems: 'flex-end', // Aligns items to the bottom, good for actions
   },
   content: {
     flex: 1, // Takes available space
@@ -90,23 +76,11 @@ const styles = StyleSheet.create({
   },
   name: {
     fontFamily: 'Inter-Bold',
-    fontSize: 18,
+    fontSize: 16,
     marginBottom: 4, // Add some space between name and count
   },
   count: {
     fontFamily: 'Inter-Medium',
     fontSize: 14,
-  },
-  actionsContainer: {
-    flexDirection: 'column', // Stack icons vertically
-    justifyContent: 'space-between', // Space them out a bit
-    alignItems: 'center',
-    marginLeft: 8, // Space between content and actions
-  },
-  actionButton: {
-    padding: 8, // Make touch target larger
-    // backgroundColor: 'rgba(0,0,0,0.1)', // Optional: subtle background for buttons
-    // borderRadius: 15,
-    // marginBottom: 8, // If stacked vertically and need space
   },
 });
