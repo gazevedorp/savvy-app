@@ -1,0 +1,16 @@
+{
+  "settings": {
+    "title": "Configurações",
+    "appearance": "Aparência",
+    "darkMode": "Modo Escuro",
+    "darkModeDescription": "Mudar para o modo {{theme}}",
+    "dataManagement": "Gerenciamento de Dados",
+    "clearData": "Limpar Todos os Dados",
+    "clearDataDescription": "Excluir todos os links e categorias salvos",
+    "about": "Sobre",
+    "aboutSavvy": "Sobre o Savvy",
+    "version": "Versão 1.0.0",
+    "language": "Idioma",
+    "languageDescription": "Mudar o idioma do aplicativo"
+  }
+}

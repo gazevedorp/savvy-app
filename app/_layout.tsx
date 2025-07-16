@@ -9,6 +9,8 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { Platform } from 'react-native';
 import { ThemeProvider } from '@/context/ThemeContext';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { I18nextProvider } from 'react-i18next';
+import i18n from '../services/i18n';
 
 // Prevent splash screen from auto-hiding
 SplashScreen.preventAutoHideAsync();
@@ -37,15 +39,17 @@ export default function RootLayout() {
   return (
     <SafeAreaProvider>
       <GestureHandlerRootView style={{ flex: 1 }}>
-        <ThemeProvider>
-          <Stack screenOptions={{ headerShown: false }}>
-            <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-            <Stack.Screen name="share/index" options={{ presentation: 'modal' }} />
-            <Stack.Screen name="link/[id]" options={{ headerShown: false, title: 'Link Details' }} />
-            <Stack.Screen name="+not-found" />
-          </Stack>
-          <StatusBar style={Platform.OS === 'ios' ? 'auto' : 'light'} />
-        </ThemeProvider>
+        <I18nextProvider i18n={i18n}>
+          <ThemeProvider>
+            <Stack screenOptions={{ headerShown: false }}>
+              <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+              <Stack.Screen name="share/index" options={{ presentation: 'modal' }} />
+              <Stack.Screen name="link/[id]" options={{ headerShown: false, title: 'Link Details' }} />
+              <Stack.Screen name="+not-found" />
+            </Stack>
+            <StatusBar style={Platform.OS === 'ios' ? 'auto' : 'light'} />
+          </ThemeProvider>
+        </I18nextProvider>
       </GestureHandlerRootView>
     </SafeAreaProvider>
   );

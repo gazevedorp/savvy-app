@@ -1,15 +1,18 @@
 import React from 'react';
 import { View, StyleSheet, Text, TouchableOpacity, Switch, ScrollView } from 'react-native';
 import { useTheme } from '@/context/ThemeContext';
-import { Moon, Sun, Trash2, Share2, Bookmark, Info, ExternalLink } from 'lucide-react-native';
+import { Moon, Sun, Trash2, Share2, Bookmark, Info, ExternalLink, Languages } from 'lucide-react-native';
 import { useLinkStore } from '@/store/linkStore';
 import { useCategoryStore } from '@/store/categoryStore'; // Import useCategoryStore
 import { useRouter } from 'expo-router';
 import ConfirmationModal from '@/components/modals/ConfirmationModal';
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import LanguageSelector from '@/components/ui/LanguageSelector';
 
 export default function SettingsScreen() {
   const { theme, toggleTheme, colors } = useTheme();
+  const { t } = useTranslation();
   const { clearAllLinks } = useLinkStore();
   const { clearAllCategories } = useCategoryStore(); // Get clearAllCategories
   const [showClearModal, setShowClearModal] = useState(false);
@@ -64,23 +67,32 @@ export default function SettingsScreen() {
       contentContainerStyle={styles.contentContainer}
     >
       <View style={styles.section}>
-        <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>Appearance</Text>
+        <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>{t('settings.appearance')}</Text>
         <SettingItem
           icon={theme === 'dark' ? <Moon size={22} color={colors.primary} /> : <Sun size={22} color={colors.primary} />}
-          title="Dark Mode"
-          description={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+          title={t('settings.darkMode')}
+          description={t('settings.darkModeDescription', { theme: theme === 'dark' ? 'light' : 'dark' })}
           action={toggleTheme}
           isSwitch={true}
           value={theme === 'dark'}
         />
+        <SettingItem
+          icon={<Languages size={22} color={colors.primary} />}
+          title={t('settings.language')}
+          description={t('settings.languageDescription')}
+          action={() => {}}
+          isSwitch={false}
+          value={null}
+        />
+        <LanguageSelector />
       </View>
 
       <View style={styles.section}>
-        <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>Data Management</Text>
+        <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>{t('settings.dataManagement')}</Text>
         <SettingItem
           icon={<Trash2 size={22} color={colors.error} />}
-          title="Clear All Data"
-          description="Delete all saved links and categories"
+          title={t('settings.clearData')}
+          description={t('settings.clearDataDescription')}
           action={() => setShowClearModal(true)}
           isSwitch={false}
           value={null}
@@ -96,11 +108,11 @@ export default function SettingsScreen() {
       </View>
 
       <View style={styles.section}>
-        <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>About</Text>
+        <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>{t('settings.about')}</Text>
         <SettingItem
           icon={<Info size={22} color={colors.primary} />}
-          title="About Savvy"
-          description="Version 1.0.0"
+          title={t('settings.aboutSavvy')}
+          description={t('settings.version')}
           action={() => {}}
           isSwitch={false}
           value={null}
@@ -113,7 +125,7 @@ export default function SettingsScreen() {
 
       <ConfirmationModal
         visible={showClearModal}
-        title="Clear All Data"
+        title={t('settings.clearData')}
         message="This will permanently delete all your saved links and categories. This action cannot be undone."
         confirmText="Delete"
         cancelText="Cancel"
