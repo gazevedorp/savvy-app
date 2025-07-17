@@ -3,10 +3,13 @@ import { useTheme } from '@/context/ThemeContext';
 import { Bookmark, Grid3X3, Search, Settings } from 'lucide-react-native';
 import { Platform } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useTranslation } from 'react-i18next';
+import '@/services/i18n';
 
 export default function TabLayout() {
-  const { theme, colors } = useTheme();
+  const { colors } = useTheme();
   const insets = useSafeAreaInsets();
+  const { t } = useTranslation();
   
   return (
     <Tabs
@@ -37,7 +40,7 @@ export default function TabLayout() {
         name="index"
         options={{
           title: "SAVVY READ LATER",
-          tabBarLabel: 'Links',
+          tabBarLabel: t('tabs.links'),
           tabBarIcon: ({ color, size }) => (
             <Bookmark size={size} color={color} />
           ),
@@ -47,7 +50,8 @@ export default function TabLayout() {
       <Tabs.Screen
         name="categories"
         options={{
-          title: 'Categories',
+          title: t('tabs.categories'),
+          tabBarLabel: t('tabs.categories'),
           tabBarIcon: ({ color, size }) => (
             <Grid3X3 size={size} color={color} />
           ),
@@ -57,7 +61,8 @@ export default function TabLayout() {
       <Tabs.Screen
         name="search"
         options={{
-          title: 'Search',
+          title: t('tabs.search'),
+          tabBarLabel: t('tabs.search'),
           tabBarIcon: ({ color, size }) => (
             <Search size={size} color={color} />
           ),
@@ -67,7 +72,8 @@ export default function TabLayout() {
       <Tabs.Screen
         name="settings"
         options={{
-          title: 'Settings',
+          title: t('tabs.settings'),
+          tabBarLabel: t('tabs.settings'),
           tabBarIcon: ({ color, size }) => (
             <Settings size={size} color={color} />
           ),

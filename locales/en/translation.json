@@ -12,5 +12,17 @@
     "version": "Version 1.0.0",
     "language": "Language",
     "languageDescription": "Change the application language"
+  },
+  "languageChange": {
+    "title": "Change Language",
+    "message": "Are you sure you want to change the language? The application will restart.",
+    "confirm": "Confirm",
+    "cancel": "Cancel"
+  },
+  "tabs": {
+    "links": "Links",
+    "categories": "Categories",
+    "search": "Search",
+    "settings": "Settings"
   }
 }

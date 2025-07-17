@@ -12,5 +12,17 @@
     "version": "Versão 1.0.0",
     "language": "Idioma",
     "languageDescription": "Mudar o idioma do aplicativo"
+  },
+  "languageChange": {
+    "title": "Mudar Idioma",
+    "message": "Tem certeza que deseja alterar o idioma? A aplicação será reiniciada.",
+    "confirm": "Confirmar",
+    "cancel": "Cancelar"
+  },
+  "tabs": {
+    "links": "Links",
+    "categories": "Categorias",
+    "search": "Pesquisar",
+    "settings": "Configurações"
   }
 }
