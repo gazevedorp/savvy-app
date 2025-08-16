@@ -66,8 +66,8 @@ export default function CategoryCard({ category, linkCount, width, onLongPress }
 const styles = StyleSheet.create({
   container: {
     borderRadius: 12,
-    padding: 16,
-    height: 100,
+    padding: 12,
+    height: 90,
   },
   content: {
     flex: 1, // Takes available space
@@ -76,11 +76,11 @@ const styles = StyleSheet.create({
   },
   name: {
     fontFamily: 'Inter-Bold',
-    fontSize: 16,
+    fontSize: 14,
     marginBottom: 4, // Add some space between name and count
   },
   count: {
     fontFamily: 'Inter-Medium',
-    fontSize: 14,
+    fontSize: 12,
   },
 });

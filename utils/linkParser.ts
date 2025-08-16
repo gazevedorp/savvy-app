@@ -11,6 +11,19 @@ export const detectLinkType = async (url: string): Promise<LinkType> => {
   try {
     const urlLower = url.toLowerCase();
     
+    // Music platforms
+    if (
+      urlLower.includes('spotify.com/track') ||
+      urlLower.includes('spotify.com/album') ||
+      urlLower.includes('spotify.com/playlist') ||
+      urlLower.includes('music.apple.com') ||
+      urlLower.includes('soundcloud.com') ||
+      urlLower.includes('bandcamp.com') ||
+      urlLower.includes('music.youtube.com')
+    ) {
+      return 'music';
+    }
+    
     // Video platforms
     if (
       urlLower.includes('youtube.com') ||
@@ -23,14 +36,13 @@ export const detectLinkType = async (url: string): Promise<LinkType> => {
       return 'video';
     }
     
-    // Podcast platforms
+    // Podcast platforms (treat as music for now)
     if (
       urlLower.includes('spotify.com/episode') ||
       urlLower.includes('podcasts.apple.com') ||
-      urlLower.includes('soundcloud.com') ||
       urlLower.includes('anchor.fm')
     ) {
-      return 'podcast';
+      return 'music';
     }
     
     // Image hosting
@@ -43,17 +55,17 @@ export const detectLinkType = async (url: string): Promise<LinkType> => {
       return 'image';
     }
     
-    // Document formats
+    // Document formats (treat as other for now)
     if (
       urlLower.includes('docs.google.com') ||
       urlLower.includes('dropbox.com') ||
       urlLower.match(/\.(pdf|doc|docx|xls|xlsx|ppt|pptx)(\?.*)?$/)
     ) {
-      return 'document';
+      return 'other';
     }
     
-    // Default to article for most web pages
-    return 'article';
+    // Default to link for most web pages
+    return 'link';
   } catch (error) {
     console.error('Error detecting link type:', error);
     return 'other';
@@ -77,6 +89,22 @@ export const extractMetadata = async (url: string): Promise<LinkMetadata> => {
         title: 'YouTube Video',
         description: 'A video from YouTube',
         thumbnail: 'https://via.placeholder.com/300x200?text=YouTube',
+      };
+    }
+    
+    if (url.includes('spotify.com')) {
+      return {
+        title: 'Spotify Music',
+        description: 'A track, album, or playlist from Spotify',
+        thumbnail: 'https://via.placeholder.com/300x200?text=Spotify',
+      };
+    }
+    
+    if (url.includes('soundcloud.com')) {
+      return {
+        title: 'SoundCloud Track',
+        description: 'A track from SoundCloud',
+        thumbnail: 'https://via.placeholder.com/300x200?text=SoundCloud',
       };
     }
     

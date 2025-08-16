@@ -8,6 +8,7 @@ import {
   TouchableOpacity,
   Platform,
   Image,
+  Alert,
 } from "react-native";
 import { useTheme } from "@/context/ThemeContext";
 import { useLinkStore } from "@/store/linkStore";
@@ -25,6 +26,7 @@ import TypeSelector from "@/components/ui/TypeSelector";
 import { detectLinkType, extractMetadata } from "@/utils/linkParser";
 import Animated, { FadeIn } from "react-native-reanimated";
 import * as ImagePicker from "expo-image-picker";
+import { supabase } from "@/lib/supabase";
 
 export default function ShareScreen() {
   const { colors } = useTheme();
@@ -42,6 +44,117 @@ export default function ShareScreen() {
   const [isLoading, setIsLoading] = useState(false);
   const [isMetadataFetched, setIsMetadataFetched] = useState(false);
   const [imageUri, setImageUri] = useState<string | null>(null); // For image preview
+
+  // Function to upload image to Supabase Storage
+  const uploadImageToSupabase = async (uri: string): Promise<string | null> => {
+    try {
+      // First, check current session
+      let { data: session, error: sessionError } = await supabase.auth.getSession();
+      
+      if (sessionError) {
+        console.error('Session error:', sessionError);
+        throw new Error('Session error: ' + sessionError.message);
+      }
+      
+      if (!session.session?.user) {
+        console.error('No user session found');
+        // Try to refresh session
+        const { data: refreshData, error: refreshError } = await supabase.auth.refreshSession();
+        if (refreshError || !refreshData.session?.user) {
+          throw new Error('User not authenticated');
+        }
+        session = refreshData;
+      }
+
+      console.log('Starting upload for URI:', uri);
+      console.log('User ID:', session.session!.user.id);
+      console.log('Session expires at:', session.session!.expires_at);
+
+      // Test Supabase connection first
+      const { data: testData, error: testError } = await supabase
+        .from('links')
+        .select('id')
+        .limit(1);
+      
+      if (testError) {
+        console.error('Supabase connection test failed:', testError);
+        throw new Error('Supabase connection failed: ' + testError.message);
+      }
+
+      console.log('Supabase connection test successful');
+
+      // Create file path
+      const fileExt = uri.split('.').pop()?.toLowerCase() || 'jpg';
+      const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
+      const filePath = `${session.session!.user.id}/${fileName}`;
+
+      console.log('File path:', filePath);
+
+      // Read the file as a blob
+      const response = await fetch(uri);
+      if (!response.ok) {
+        throw new Error(`Failed to fetch image: ${response.status}`);
+      }
+      
+      const blob = await response.blob();
+      console.log('Blob size:', blob.size);
+      console.log('Blob type:', blob.type);
+
+      // Test storage bucket access
+      const { data: buckets, error: bucketsError } = await supabase.storage.listBuckets();
+      console.log('Available buckets:', buckets?.map(b => b.name));
+      
+      if (bucketsError) {
+        console.error('Bucket list error:', bucketsError);
+      }
+
+      // Upload to Supabase Storage with retry
+      let uploadAttempts = 0;
+      const maxAttempts = 3;
+      
+      while (uploadAttempts < maxAttempts) {
+        try {
+          uploadAttempts++;
+          console.log(`Upload attempt ${uploadAttempts}/${maxAttempts}`);
+          
+          const { data, error } = await supabase.storage
+            .from('savvy-images')
+            .upload(filePath, blob, {
+              contentType: blob.type || `image/${fileExt}`,
+              upsert: false,
+            });
+
+          if (error) {
+            console.error(`Upload error (attempt ${uploadAttempts}):`, error);
+            if (uploadAttempts === maxAttempts) throw error;
+            // Wait 1 second before retry
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            continue;
+          }
+
+          console.log('Upload successful:', data);
+
+          // Get the public URL
+          const { data: urlData } = supabase.storage
+            .from('savvy-images')
+            .getPublicUrl(filePath);
+
+          console.log('Public URL:', urlData.publicUrl);
+          return urlData.publicUrl;
+        } catch (attemptError) {
+          console.error(`Attempt ${uploadAttempts} failed:`, attemptError);
+          if (uploadAttempts === maxAttempts) throw attemptError;
+        }
+      }
+
+      return null;
+    } catch (error) {
+      console.error('Error uploading image:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+      Alert.alert('Error', `Failed to upload image: ${errorMessage}`);
+      return null;
+    }
+  };
 
   useEffect(() => {
     // Fetch categories when the screen mounts
@@ -61,15 +174,15 @@ export default function ShareScreen() {
         setTitle((prevTitle) => prevTitle || "Shared Image");
         setIsMetadataFetched(true); // No web metadata to fetch for local files
       } else {
-        // It's a web URL, proceed with metadata fetching
-        fetchLinkMetadata(sharedUrl);
+        // It's a web URL, but don't auto-fetch metadata
+        setIsMetadataFetched(true);
       }
     }
   }, [params]);
 
   const fetchLinkMetadata = async (linkUrl: string) => {
-    // Skip for text type, local file URIs, or if already fetched/no URL
-    if (selectedType === "text" || linkUrl.startsWith("file://")) {
+    // Skip for local file URIs, or if already fetched/no URL
+    if (linkUrl.startsWith("file://")) {
       setIsMetadataFetched(true);
       return;
     }
@@ -86,7 +199,6 @@ export default function ShareScreen() {
         "video",
         "image",
         "music",
-        "text",
       ];
       if (validTypes.includes(detectedType) && detectedType !== "image") {
         // Don't auto-switch to image from web URL detection
@@ -138,43 +250,70 @@ export default function ShareScreen() {
 
   const handleSave = async () => {
     if (isLoading) return;
-    if (selectedType === "text" && !title.trim()) {
-      alert("Please enter a title for the text savvy.");
+    if (selectedType === "other" && !title.trim()) {
+      Alert.alert("Error", "Please enter a title for the note.");
       return;
     }
-    if (selectedType !== "text" && !url.trim()) {
-      alert(
+    if (selectedType !== "other" && !url.trim()) {
+      Alert.alert(
+        "Error",
         selectedType === "image"
           ? "Please choose an image."
           : "Please enter a URL."
       );
       return;
     }
-    if (!title.trim() && selectedType !== "text") {
-      alert("Please enter a title.");
+    if (!title.trim() && selectedType !== "other") {
+      Alert.alert("Error", "Please enter a title.");
       return;
     }
 
-    let savvyTitle = title.trim();
-    if (!savvyTitle) {
-      if (selectedType === "image") savvyTitle = "Saved Image";
-      else if (selectedType !== "text")
-        savvyTitle = url; // Fallback to URL if title empty (not for image)
-      else savvyTitle = "Untitled Note";
+    setIsLoading(true);
+
+    try {
+      let finalUrl = url;
+      let thumbnail = null;
+
+      // If it's an image type and we have a local URI, upload to Supabase
+      if (selectedType === "image" && imageUri && imageUri.startsWith("file://")) {
+        const uploadedUrl = await uploadImageToSupabase(imageUri);
+        if (uploadedUrl) {
+          finalUrl = uploadedUrl;
+          thumbnail = uploadedUrl; // Use the same URL as thumbnail
+        } else {
+          setIsLoading(false);
+          return; // Upload failed, don't proceed
+        }
+      }
+
+      let savvyTitle = title.trim();
+      if (!savvyTitle) {
+        if (selectedType === "image") savvyTitle = "Saved Image";
+        else if (selectedType === "other") savvyTitle = "Untitled Note";
+        else if (url)
+          savvyTitle = url; // Fallback to URL if title empty (for URL-based types)
+        else savvyTitle = "Untitled Link";
+      }
+
+      const newLink: Partial<Link> = {
+        url: finalUrl,
+        title: savvyTitle,
+        description: description,
+        thumbnail: thumbnail || undefined,
+        type: selectedType,
+        categoryIds: selectedCategories,
+        created_at: new Date().toISOString(),
+        is_read: false,
+      };
+
+      await addLink(newLink);
+      router.back();
+    } catch (error) {
+      console.error('Error saving link:', error);
+      Alert.alert('Error', 'Failed to save. Please try again.');
+    } finally {
+      setIsLoading(false);
     }
-
-    const newLink: Partial<Link> = {
-      url: selectedType === "text" ? "" : url,
-      title: savvyTitle,
-      description: description,
-      type: selectedType,
-      categoryIds: selectedCategories,
-      createdAt: new Date().toISOString(),
-      isRead: false,
-    };
-
-    await addLink(newLink);
-    router.back();
   };
 
   const handleCancel = () => {
@@ -203,8 +342,8 @@ export default function ShareScreen() {
         setTitle(""); // Clear title from web metadata
         setDescription("");
       }
-      // If changing to 'text'
-      else if (newType === "text") {
+      // If changing to 'other' (text type)
+      else if (newType === "other") {
         setUrl("");
         setImageUri(null);
         // Keep title/description if user might want to convert a link to a note
@@ -212,7 +351,7 @@ export default function ShareScreen() {
 
       // If new type is URL-based and a web URL exists, try fetching metadata
       if (
-        newType !== "text" &&
+        newType !== "other" &&
         newType !== "image" &&
         url &&
         !url.startsWith("file://")
@@ -224,7 +363,7 @@ export default function ShareScreen() {
 
   const canSave = () => {
     if (isLoading) return false;
-    if (selectedType === "text") return !!title.trim();
+    if (selectedType === "other") return !!title.trim();
     return !!url.trim() && !!title.trim();
   };
 
@@ -288,42 +427,39 @@ export default function ShareScreen() {
               </View>
             )}
           </>
-        ) : (
-          selectedType !== "text" && (
-            <View
-              style={[
-                styles.inputContainer,
-                { backgroundColor: colors.card, borderColor: colors.border },
-              ]}
-            >
-              <LinkIcon
-                size={20}
-                color={colors.textSecondary}
-                style={styles.inputIcon}
-              />
-              <TextInput
-                style={[styles.input, { color: colors.text }]}
-                placeholder={
-                  selectedType === "video"
-                    ? "Video URL"
-                    : selectedType === "music"
-                    ? "Music URL"
-                    : "https://example.com"
-                }
-                placeholderTextColor={colors.textSecondary}
-                value={url}
-                onChangeText={(text) => {
-                  setUrl(text);
-                  setIsMetadataFetched(false);
-                }}
-                autoCapitalize="none"
-                autoCorrect={false}
-                keyboardType="url"
-                onBlur={() => fetchLinkMetadata(url)} // Fetch metadata when user finishes typing URL
-              />
-            </View>
-          )
-        )}
+        ) : selectedType !== "other" ? (
+          <View
+            style={[
+              styles.inputContainer,
+              { backgroundColor: colors.card, borderColor: colors.border },
+            ]}
+          >
+            <LinkIcon
+              size={20}
+              color={colors.textSecondary}
+              style={styles.inputIcon}
+            />
+            <TextInput
+              style={[styles.input, { color: colors.text }]}
+              placeholder={
+                selectedType === "video"
+                  ? "Video URL"
+                  : selectedType === "music"
+                  ? "Music URL"
+                  : "https://example.com"
+              }
+              placeholderTextColor={colors.textSecondary}
+              value={url}
+              onChangeText={(text) => {
+                setUrl(text);
+                setIsMetadataFetched(false);
+              }}
+              autoCapitalize="none"
+              autoCorrect={false}
+              keyboardType="url"
+            />
+          </View>
+        ) : null}
 
         <View
           style={[
@@ -349,7 +485,7 @@ export default function ShareScreen() {
           <TextInput
             style={[styles.textArea, { color: colors.text }]}
             placeholder={
-              selectedType === "text"
+              selectedType === "other"
                 ? "Start writing your note..."
                 : "Description (optional)"
             }
@@ -398,7 +534,7 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontFamily: "Inter-Bold",
-    fontSize: 18,
+    fontSize: 16,
   },
   headerButton: {
     width: 40,
@@ -416,31 +552,31 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderRadius: 8,
     marginBottom: 16,
-    paddingHorizontal: 12,
+    paddingHorizontal: 8,
   },
   inputIcon: {
-    marginRight: 8,
+    marginRight: 6,
   },
   input: {
     flex: 1,
-    height: 48,
+    height: 40,
     fontFamily: "Inter-Regular",
-    fontSize: 16,
+    fontSize: 14,
   },
   textAreaContainer: {
     borderWidth: 1,
     borderRadius: 8,
     marginBottom: 24,
-    padding: 12,
+    padding: 8,
   },
   textArea: {
     fontFamily: "Inter-Regular",
-    fontSize: 16,
-    minHeight: 100,
+    fontSize: 14,
+    minHeight: 80,
   },
   sectionTitle: {
     fontFamily: "Inter-Medium",
-    fontSize: 16,
+    fontSize: 14,
     marginBottom: 12,
   },
   pickImageButton: {
@@ -449,13 +585,13 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderRadius: 8,
     marginBottom: 16,
-    paddingHorizontal: 12,
-    paddingVertical: 14,
+    paddingHorizontal: 8,
+    paddingVertical: 10,
     justifyContent: "center",
   },
   pickImageButtonText: {
     fontFamily: "Inter-Medium",
-    fontSize: 16,
+    fontSize: 14,
     marginLeft: 8,
   },
   imagePreviewContainer: {

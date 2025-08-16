@@ -66,14 +66,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
   },
   filterOption: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
     borderRadius: 20,
     marginRight: 8,
     borderWidth: 1,
   },
   filterText: {
     fontFamily: 'Inter-Medium',
-    fontSize: 14,
+    fontSize: 12,
   },
 });

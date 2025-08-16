@@ -58,7 +58,7 @@ export default function CategoriesScreen() {
   }, [fetchCategories]);
 
   const getCategoryLinkCount = (categoryId: string) => {
-    return links.filter((link) => link.categoryIds.includes(categoryId)).length;
+    return links.filter((link) => link.categoryIds?.includes(categoryId)).length;
   };
 
   const handleOpenAddModal = () => {
@@ -112,7 +112,7 @@ export default function CategoriesScreen() {
   };
 
   const handleDeleteCategoryOnly = async () => {
-    if (!deletingCategory) return;
+    if (!deletingCategory || !deletingCategory.id) return;
     try {
       await removeCategoryFromAssociatedLinks(deletingCategory.id);
       await deleteCategory(deletingCategory.id);
@@ -124,7 +124,7 @@ export default function CategoriesScreen() {
   };
 
   const handleDeleteCategoryAndLinks = async () => {
-    if (!deletingCategory) return;
+    if (!deletingCategory || !deletingCategory.id) return;
     try {
       await deleteLinksAssociatedWithCategory(deletingCategory.id);
       await deleteCategory(deletingCategory.id);
@@ -141,7 +141,7 @@ export default function CategoriesScreen() {
     icon?: string;
   }) => {
     try {
-      if (editingCategory) {
+      if (editingCategory && editingCategory.id) {
         await editCategory(editingCategory.id, data.name, data.color);
       } else {
         await addCategory({
@@ -161,7 +161,7 @@ export default function CategoriesScreen() {
   const renderItem = ({ item }: { item: Category }) => (
     <CategoryCard
       category={item}
-      linkCount={getCategoryLinkCount(item.id)}
+      linkCount={getCategoryLinkCount(item.id || '')}
       width={cardWidth}
       onLongPress={handleLongPressCategory} // Use onLongPress to open actions modal
       // onEdit and onDelete are removed from here
@@ -174,7 +174,7 @@ export default function CategoriesScreen() {
         <FlatList
           data={categories}
           renderItem={renderItem}
-          keyExtractor={(item) => item.id}
+          keyExtractor={(item) => item.id || `category-${Math.random()}`}
           contentContainerStyle={[
             styles.listContent,
             { paddingBottom: insets.bottom + 100 }, // Ensure space for FAB and tab bar

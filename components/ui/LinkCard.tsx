@@ -28,12 +28,14 @@ export default function LinkCard({ link }: LinkCardProps) {
     router.push(`/link/${link.id}`);
   };
 
-  const handleToggleRead = (e: Event) => {
+  const handleToggleRead = (e: any) => {
     e.stopPropagation();
-    updateLink(link.id, { isRead: !link.isRead });
+    if (!link.id) return;
+    updateLink(link.id, { is_read: !link.is_read });
   };
 
   const getTypeLabel = () => {
+    if (link.type === "other") return "Note";
     return link.type.charAt(0).toUpperCase() + link.type.slice(1);
   };
 
@@ -47,7 +49,7 @@ export default function LinkCard({ link }: LinkCardProps) {
         return "#34C759"; // Green
       case "music":
         return "#5856D6"; // Purple
-      case "text":
+      case "other":
         return "#FF9500"; // Orange
       default:
         return colors.secondary;
@@ -70,7 +72,7 @@ export default function LinkCard({ link }: LinkCardProps) {
           {
             backgroundColor: colors.card,
             borderColor: colors.border,
-            opacity: link.isRead ? 0.8 : 1,
+            opacity: link.is_read ? 0.8 : 1,
           },
         ]}
         onPress={handlePress}
@@ -83,7 +85,7 @@ export default function LinkCard({ link }: LinkCardProps) {
                 styles.title,
                 {
                   color: colors.text,
-                  textDecorationLine: link.isRead ? "line-through" : "none",
+                  textDecorationLine: link.is_read ? "line-through" : "none",
                 },
               ]}
               numberOfLines={2}
@@ -112,7 +114,7 @@ export default function LinkCard({ link }: LinkCardProps) {
             </View>
 
             <Text style={[styles.time, { color: colors.textSecondary }]}>
-              {formatRelativeTime(link.createdAt)}
+              {formatRelativeTime(link.created_at)}
             </Text>
           </View>
         </View>
@@ -122,7 +124,7 @@ export default function LinkCard({ link }: LinkCardProps) {
             style={styles.actionButton}
             onPress={handleToggleRead}
           >
-            {link.isRead ? (
+            {link.is_read ? (
               <Check size={20} color={colors.success} />
             ) : (
               <Clock size={20} color={colors.textSecondary} />
@@ -161,20 +163,20 @@ const styles = StyleSheet.create({
   },
   title: {
     fontFamily: "Inter-Bold",
-    fontSize: 16,
+    fontSize: 14,
     marginBottom: 4,
     flex: 1,
   },
   url: {
     fontFamily: "Inter-Regular",
-    fontSize: 13,
+    fontSize: 11,
     marginBottom: 8,
   },
   description: {
     fontFamily: "Inter-Regular",
-    fontSize: 14,
+    fontSize: 12,
     marginBottom: 12,
-    lineHeight: 20,
+    lineHeight: 18,
   },
   footer: {
     flexDirection: "row",
@@ -188,11 +190,11 @@ const styles = StyleSheet.create({
   },
   typeText: {
     fontFamily: "Inter-Medium",
-    fontSize: 12,
+    fontSize: 10,
   },
   time: {
     fontFamily: "Inter-Regular",
-    fontSize: 12,
+    fontSize: 10,
   },
   actions: {
     justifyContent: "space-between",

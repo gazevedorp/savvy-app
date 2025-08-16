@@ -33,7 +33,7 @@ export default function EditLinkScreen() {
         setUrl(currentLink.url);
         setDescription(currentLink.description || '');
         setSelectedType(currentLink.type);
-        setSelectedCategories(currentLink.categoryIds);
+        setSelectedCategories(currentLink.categoryIds || []);
         if (currentLink.type === 'image' && currentLink.url.startsWith('file://')) {
           setImageUri(currentLink.url);
         }
@@ -64,15 +64,15 @@ export default function EditLinkScreen() {
 
   const handleSave = () => {
     if (id && typeof id === 'string') {
-      if (selectedType === 'text' && !title.trim()) {
+      if (selectedType === 'other' && !title.trim()) {
         alert('Please enter a title for the text savvy.');
         return;
       }
-      if (selectedType !== 'text' && !url.trim()) {
+      if (selectedType !== 'other' && !url.trim()) {
         alert(selectedType === 'image' ? 'Please choose an image or ensure a URL is present.' : 'Please enter a URL.');
         return;
       }
-      if (!title.trim() && selectedType !== 'text') {
+      if (!title.trim() && selectedType !== 'other') {
           alert('Please enter a title.');
           return;
       }
@@ -80,13 +80,13 @@ export default function EditLinkScreen() {
       let savvyTitle = title.trim();
       if (!savvyTitle) {
         if (selectedType === 'image' && url.startsWith('file://')) savvyTitle = 'Edited Image';
-        else if (selectedType !== 'text') savvyTitle = url;
+        else if (selectedType !== 'other') savvyTitle = url;
         else savvyTitle = 'Untitled Note';
       }
 
       updateLink(id, {
         title: savvyTitle,
-        url: selectedType === 'text' ? '' : url,
+        url: url,
         description,
         type: selectedType,
         categoryIds: selectedCategories,
@@ -113,7 +113,7 @@ export default function EditLinkScreen() {
         setImageUri(null);
       }
       // If changing to 'text'
-      else if (newType === 'text') {
+      else if (newType === 'other') {
         // If switching to text, the URL field is not relevant in the same way
         // setUrl(''); // Optionally clear URL
         setImageUri(null);
@@ -126,7 +126,7 @@ export default function EditLinkScreen() {
   };
 
   const canSave = () => {
-    if (selectedType === 'text') return !!title.trim();
+    if (selectedType === 'other') return !!title.trim();
     return !!url.trim() && !!title.trim();
   };
 
@@ -182,17 +182,17 @@ export default function EditLinkScreen() {
                  </View>
             )}
           </>
-        ) : selectedType !== 'text' && (
+        ) : selectedType !== 'other' && (
           <View style={[styles.inputContainer, { backgroundColor: colors.card, borderColor: colors.border }]}>
             <LinkIcon size={20} color={colors.textSecondary} style={styles.inputIcon} />
-            <TextInput style={[styles.input, { color: colors.text }]} placeholder={selectedType === 'video' ? "Video URL" : selectedType === 'music' ? "Music URL" : "https://example.com"} placeholderTextColor={colors.textSecondary} value={url} onChangeText={setUrl} autoCapitalize="none" autoCorrect={false} keyboardType="url"/>
+            <TextInput style={[styles.input, { color: colors.text }]} placeholder={selectedType === 'video' ? "Video URL" : "https://example.com"} placeholderTextColor={colors.textSecondary} value={url} onChangeText={setUrl} autoCapitalize="none" autoCorrect={false} keyboardType="url"/>
           </View>
         )}
         
         <View style={[styles.textAreaContainer, { backgroundColor: colors.card, borderColor: colors.border }]}>
           <TextInput
             style={[styles.textArea, { color: colors.text }]}
-            placeholder={selectedType === 'text' ? "Your note content..." : "Description (optional)"}
+            placeholder={selectedType === 'other' ? "Your note content..." : "Description (optional)"}
             placeholderTextColor={colors.textSecondary}
             value={description}
             onChangeText={setDescription}
@@ -246,7 +246,7 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontFamily: 'Inter-Bold',
-    fontSize: 18,
+    fontSize: 16,
   },
   saveButton: {
     width: 40,
@@ -263,30 +263,30 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderRadius: 8,
     marginBottom: 16,
-    paddingHorizontal: 12,
+    paddingHorizontal: 8,
   },
   inputIcon: { // Added for LinkIcon
-    marginRight: 8,
+    marginRight: 6,
   },
   input: {
-    height: 48,
+    height: 40,
     fontFamily: 'Inter-Regular',
-    fontSize: 16,
+    fontSize: 14,
   },
   textAreaContainer: {
     borderWidth: 1,
     borderRadius: 8,
     marginBottom: 24,
-    padding: 12,
+    padding: 8,
   },
   textArea: {
     fontFamily: 'Inter-Regular',
-    fontSize: 16,
-    minHeight: 100,
+    fontSize: 14,
+    minHeight: 80,
   },
   sectionTitle: {
     fontFamily: 'Inter-Medium',
-    fontSize: 16,
+    fontSize: 14,
     marginBottom: 12,
   },
   pickImageButton: {
@@ -295,13 +295,13 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderRadius: 8,
     marginBottom: 16,
-    paddingHorizontal: 12,
-    paddingVertical: 14,
+    paddingHorizontal: 8,
+    paddingVertical: 10,
     justifyContent: 'center',
   },
   pickImageButtonText: {
     fontFamily: 'Inter-Medium',
-    fontSize: 16,
+    fontSize: 14,
     marginLeft: 8,
   },
   imagePreviewContainer: {

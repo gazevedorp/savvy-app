@@ -11,7 +11,7 @@ interface TypeSelectorProps {
 
 export default function TypeSelector({ selectedType, onSelectType }: TypeSelectorProps) {
   const { colors } = useTheme();
-  
+
   const types: { type: LinkType; label: string; icon: React.ReactNode; color: string }[] = [
     {
       type: 'link',
@@ -25,12 +25,12 @@ export default function TypeSelector({ selectedType, onSelectType }: TypeSelecto
       icon: <Video size={20} color={selectedType === 'video' ? '#fff' : '#FF2D55'} />,
       color: '#FF2D55',
     },
-    {
-      type: 'image',
-      label: 'Image',
-      icon: <ImageIcon size={20} color={selectedType === 'image' ? '#fff' : '#34C759'} />,
-      color: '#34C759',
-    },
+    // {
+    //   type: 'image',
+    //   label: 'Image',
+    //   icon: <ImageIcon size={20} color={selectedType === 'image' ? '#fff' : '#34C759'} />,
+    //   color: '#34C759',
+    // },
     {
       type: 'music',
       label: 'Music',
@@ -38,9 +38,9 @@ export default function TypeSelector({ selectedType, onSelectType }: TypeSelecto
       color: '#5856D6',
     },
     {
-      type: 'text',
-      label: 'Text',
-      icon: <FileText size={20} color={selectedType === 'text' ? '#fff' : '#FF9500'} />,
+      type: 'other',
+      label: 'Note',
+      icon: <FileText size={20} color={selectedType === 'other' ? '#fff' : '#FF9500'} />,
       color: '#FF9500',
     },
   ];
@@ -52,7 +52,7 @@ export default function TypeSelector({ selectedType, onSelectType }: TypeSelecto
           key={item.type}
           style={[
             styles.typeOption,
-            { 
+            {
               backgroundColor: selectedType === item.type ? item.color : colors.card,
               borderColor: item.color,
             }
@@ -62,7 +62,7 @@ export default function TypeSelector({ selectedType, onSelectType }: TypeSelecto
           <View style={styles.iconContainer}>
             {item.icon}
           </View>
-          <Text 
+          <Text
             style={[
               styles.typeLabel,
               { color: selectedType === item.type ? '#fff' : item.color }
@@ -85,8 +85,8 @@ const styles = StyleSheet.create({
   typeOption: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
     borderRadius: 16,
     marginRight: 8,
     marginBottom: 8,
@@ -97,6 +97,6 @@ const styles = StyleSheet.create({
   },
   typeLabel: {
     fontFamily: 'Inter-Medium',
-    fontSize: 14,
+    fontSize: 12,
   },
 });

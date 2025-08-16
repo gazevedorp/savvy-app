@@ -1,6 +1,16 @@
 // Format a date string to relative time (e.g., "2 hours ago", "3 days ago")
-export const formatRelativeTime = (dateString: string): string => {
+export const formatRelativeTime = (dateString: string | undefined): string => {
+  if (!dateString) {
+    return 'Unknown time';
+  }
+  
   const date = new Date(dateString);
+  
+  // Check if date is valid
+  if (isNaN(date.getTime())) {
+    return 'Invalid date';
+  }
+  
   const now = new Date();
   
   const seconds = Math.floor((now.getTime() - date.getTime()) / 1000);

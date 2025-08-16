@@ -34,11 +34,11 @@ export default function ConfirmationModal({
     >
       <View style={styles.centeredView}>
         <View style={[styles.modalView, { backgroundColor: colors.card }]}>
-          <Text style={[styles.modalTitle, { color: colors.text }]}>
+          <Text style={[styles.title, { color: colors.text }]}>
             {title}
           </Text>
           
-          <Text style={[styles.modalMessage, { color: colors.textSecondary }]}>
+          <Text style={[styles.message, { color: colors.textSecondary }]}>
             {message}
           </Text>
           
@@ -89,15 +89,15 @@ const styles = StyleSheet.create({
     width: '90%',
     maxWidth: 400,
   },
-  modalTitle: {
+  title: {
     fontFamily: 'Inter-Bold',
-    fontSize: 20,
+    fontSize: 16,
     marginBottom: 12,
     textAlign: 'center',
   },
-  modalMessage: {
+  message: {
     fontFamily: 'Inter-Regular',
-    fontSize: 16,
+    fontSize: 14,
     marginBottom: 24,
     textAlign: 'center',
     lineHeight: 24,
@@ -121,6 +121,6 @@ const styles = StyleSheet.create({
   },
   buttonText: {
     fontFamily: 'Inter-Medium',
-    fontSize: 16,
+    fontSize: 14,
   },
 });

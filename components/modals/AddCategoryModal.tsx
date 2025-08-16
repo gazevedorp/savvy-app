@@ -147,7 +147,7 @@ const styles = StyleSheet.create({
   },
   title: {
     fontFamily: 'Inter-Bold',
-    fontSize: 18,
+    fontSize: 16,
   },
   closeButton: {
     width: 40,
@@ -165,16 +165,16 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderRadius: 8,
     marginBottom: 24,
-    paddingHorizontal: 12,
+    paddingHorizontal: 8,
   },
   input: {
-    height: 48,
+    height: 40,
     fontFamily: 'Inter-Regular',
-    fontSize: 16,
+    fontSize: 14,
   },
   colorLabel: {
     fontFamily: 'Inter-Medium',
-    fontSize: 16,
+    fontSize: 14,
     marginBottom: 16,
   },
   colorGrid: {

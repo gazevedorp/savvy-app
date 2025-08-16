@@ -28,7 +28,7 @@ export default function CategorySelector({
   return (
     <View style={styles.container}>
       {categories.map((category) => {
-        const isSelected = selectedCategories.includes(category.id);
+        const isSelected = category.id ? selectedCategories.includes(category.id) : false;
         
         return (
           <TouchableOpacity
@@ -40,7 +40,12 @@ export default function CategorySelector({
                 borderColor: isSelected ? category.color : colors.border,
               }
             ]}
-            onPress={() => onSelectCategory(category.id)}
+            onPress={() => {
+              if (category.id) {
+                onSelectCategory(category.id);
+              }
+            }}
+            disabled={!category.id}
           >
             <Text 
               style={[
@@ -70,8 +75,8 @@ const styles = StyleSheet.create({
   categoryItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
     borderRadius: 16,
     marginRight: 8,
     marginBottom: 8,
@@ -79,7 +84,7 @@ const styles = StyleSheet.create({
   },
   categoryName: {
     fontFamily: 'Inter-Medium',
-    fontSize: 14,
+    fontSize: 12,
     marginRight: 4,
   },
   emptyText: {

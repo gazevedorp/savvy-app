@@ -104,7 +104,7 @@ const styles = StyleSheet.create({
   },
   modalTitle: {
     fontFamily: 'Inter-Bold',
-    fontSize: 18,
+    fontSize: 16,
   },
   closeButton: {
     padding: 8,
@@ -120,6 +120,6 @@ const styles = StyleSheet.create({
   },
   optionText: {
     fontFamily: 'Inter-Medium',
-    fontSize: 16,
+    fontSize: 14,
   },
 });

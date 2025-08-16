@@ -96,19 +96,19 @@ const styles = StyleSheet.create({
     width: '90%',
   },
   modalTitle: {
-    fontSize: 18,
+    fontSize: 16,
     fontFamily: 'Inter-Bold',
     marginBottom: 8,
     textAlign: 'center',
   },
   modalMessage: {
-    fontSize: 15,
+    fontSize: 13,
     fontFamily: 'Inter-Regular',
     marginBottom: 20,
     textAlign: 'center',
   },
   optionDescription: {
-    fontSize: 13,
+    fontSize: 11,
     fontFamily: 'Inter-Regular',
     textAlign: 'center',
     marginTop: 4,
@@ -124,7 +124,7 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   buttonText: {
-    fontSize: 16,
+    fontSize: 14,
     fontFamily: 'Inter-Medium',
   },
   buttonCancel: {

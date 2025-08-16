@@ -48,20 +48,20 @@ export default function LinkDetailScreen() {
   };
 
   const handleToggleRead = () => {
-    if (link) {
-      updateLink(link.id, { isRead: !link.isRead });
+    if (link && link.id) {
+      updateLink(link.id, { is_read: !link.is_read });
     }
   };
 
   const handleDeleteLink = () => {
-    if (link) {
+    if (link && link.id) {
       deleteLink(link.id);
       router.back();
     }
   };
 
   const getCategoryNames = () => {
-    if (!link?.categoryIds.length) return 'No categories';
+    if (!link?.categoryIds || !link.categoryIds.length) return 'No categories';
     
     return link.categoryIds
       .map(catId => categories.find(cat => cat.id === catId)?.name)
@@ -113,12 +113,12 @@ export default function LinkDetailScreen() {
           <View style={styles.metaRow}>
             <View style={[styles.typeTag, { backgroundColor: colors.primaryLight }]}>
               <Text style={[styles.typeText, { color: colors.primary }]}>
-                {link.type.charAt(0).toUpperCase() + link.type.slice(1)}
+                {link.type === "other" ? "Note" : link.type.charAt(0).toUpperCase() + link.type.slice(1)}
               </Text>
             </View>
             
             <Text style={[styles.dateText, { color: colors.textSecondary }]}>
-              Saved {formatRelativeTime(link.createdAt)}
+              Saved {formatRelativeTime(link.created_at)}
             </Text>
           </View>
           
@@ -144,11 +144,6 @@ export default function LinkDetailScreen() {
             <WebView // Este é o seu componente customizado de @/components/WebView
               url={link.url}
               style={styles.webView}
-              // Props padrão para interatividade.
-              // É crucial que seu componente @/components/WebView repasse estas props.
-              javaScriptEnabled={true}
-              domStorageEnabled={true}
-              {...(Platform.OS === 'android' && { nestedScrollEnabled: true })}
             />
           </View>
         ) : (
@@ -162,7 +157,7 @@ export default function LinkDetailScreen() {
           style={styles.actionButton}
           onPress={handleToggleRead}
         >
-          {link.isRead ? (
+          {link.is_read ? (
             <Check size={24} color={colors.success} />
           ) : (
             <Clock size={24} color={colors.textSecondary} />
@@ -231,7 +226,7 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontFamily: 'Inter-Bold',
-    fontSize: 18,
+    fontSize: 16,
     flex: 1,
   },
   content: {
@@ -246,18 +241,18 @@ const styles = StyleSheet.create({
   },
   title: {
     fontFamily: 'Inter-Bold',
-    fontSize: 20,
+    fontSize: 18,
     marginBottom: 8,
   },
   url: {
     fontFamily: 'Inter-Regular',
-    fontSize: 14,
+    fontSize: 12,
     marginBottom: 12,
   },
   description: {
     fontFamily: 'Inter-Regular',
-    fontSize: 16,
-    lineHeight: 24,
+    fontSize: 14,
+    lineHeight: 22,
     marginBottom: 16,
   },
   metaRow: {
@@ -273,11 +268,11 @@ const styles = StyleSheet.create({
   },
   typeText: {
     fontFamily: 'Inter-Medium',
-    fontSize: 12,
+    fontSize: 10,
   },
   dateText: {
     fontFamily: 'Inter-Regular',
-    fontSize: 14,
+    fontSize: 12,
   },
   categoryRow: {
     flexDirection: 'row',
@@ -285,12 +280,12 @@ const styles = StyleSheet.create({
   },
   categoryLabel: {
     fontFamily: 'Inter-Medium',
-    fontSize: 14,
+    fontSize: 12,
     marginRight: 8,
   },
   categoryText: {
     fontFamily: 'Inter-Regular',
-    fontSize: 14,
+    fontSize: 12,
     flex: 1,
   },
   previewContainer: {
@@ -301,7 +296,7 @@ const styles = StyleSheet.create({
   },
   previewTitle: {
     fontFamily: 'Inter-Medium',
-    fontSize: 14,
+    fontSize: 12,
     padding: 12,
     borderBottomWidth: 1,
   },

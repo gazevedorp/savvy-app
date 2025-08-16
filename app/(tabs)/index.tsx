@@ -19,7 +19,7 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import { XCircle } from "lucide-react-native";
 
 export default function AllLinksScreen() {
-  const { colors } = useTheme();
+  const { colors, theme } = useTheme();
   const { links, fetchLinks } = useLinkStore();
   const [refreshing, setRefreshing] = useState(false);
   const [filteredLinks, setFilteredLinks] = useState<Link[]>([]);
@@ -65,7 +65,7 @@ export default function AllLinksScreen() {
     // Filter by category if active
     if (activeCategoryFilter) {
       tempLinks = tempLinks.filter((link) =>
-        link.categoryIds.includes(activeCategoryFilter.id)
+        link.categoryIds?.includes(activeCategoryFilter.id!)
       );
     }
 
@@ -75,9 +75,9 @@ export default function AllLinksScreen() {
     }
     // Filter by read status
     if (activeReadStatusFilter === "read") {
-      tempLinks = tempLinks.filter((link) => link.isRead);
+      tempLinks = tempLinks.filter((link) => link.is_read);
     } else if (activeReadStatusFilter === "unread") {
-      tempLinks = tempLinks.filter((link) => !link.isRead);
+      tempLinks = tempLinks.filter((link) => !link.is_read);
     }
     setFilteredLinks(tempLinks);
   }, [links, activeTypeFilter, activeReadStatusFilter, activeCategoryFilter]);
@@ -90,13 +90,13 @@ export default function AllLinksScreen() {
 
   const renderItem = ({ item }: { item: Link }) => <LinkCard link={item} />;
 
-  const typeFilterOptions = [
+    const typeFilterOptions = [
     { id: "all", label: "All" },
     { id: "link", label: "Links" },
     { id: "video", label: "Videos" },
-    { id: "image", label: "Images" },
-    { id: "music", label: "Musics" },
-    { id: "text", label: "Texts" },
+    // { id: "image", label: "Images" },
+    { id: "music", label: "Music" },
+    { id: "other", label: "Notes" },
   ];
 
   const readStatusFilterOptions = [
@@ -174,7 +174,7 @@ export default function AllLinksScreen() {
                 {
                   color:
                     activeReadStatusFilter === option.id
-                      ? colors.theme === "dark"
+                      ? theme === "dark"
                         ? colors.background
                         : "#FFFFFF"
                       : colors.primary,
@@ -191,7 +191,7 @@ export default function AllLinksScreen() {
         <FlatList
           data={filteredLinks}
           renderItem={renderItem}
-          keyExtractor={(item) => item.id}
+          keyExtractor={(item) => item.id ?? ""}
           contentContainerStyle={styles.listContent}
           showsVerticalScrollIndicator={false}
           refreshControl={
@@ -252,7 +252,7 @@ const styles = StyleSheet.create({
   },
   segmentButtonText: {
     fontFamily: "Inter-Medium",
-    fontSize: 14,
+    fontSize: 12,
   },
   activeCategoryFilterContainer: {
     flexDirection: "row",
@@ -267,7 +267,7 @@ const styles = StyleSheet.create({
   },
   activeCategoryFilterText: {
     fontFamily: "Inter-Medium",
-    fontSize: 14,
+    fontSize: 12,
     flex: 1,
     marginRight: 8,
   },

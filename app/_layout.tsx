@@ -8,7 +8,9 @@ import { SplashScreen } from 'expo-router';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { Platform } from 'react-native';
 import { ThemeProvider } from '@/context/ThemeContext';
+import { AuthProvider } from '@/context/AuthContext';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import AuthGuard from '@/components/AuthGuard';
 
 // Prevent splash screen from auto-hiding
 SplashScreen.preventAutoHideAsync();
@@ -38,13 +40,18 @@ export default function RootLayout() {
     <SafeAreaProvider>
       <GestureHandlerRootView style={{ flex: 1 }}>
         <ThemeProvider>
-          <Stack screenOptions={{ headerShown: false }}>
-            <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-            <Stack.Screen name="share/index" options={{ presentation: 'modal' }} />
-            <Stack.Screen name="link/[id]" options={{ headerShown: false, title: 'Link Details' }} />
-            <Stack.Screen name="+not-found" />
-          </Stack>
-          <StatusBar style={Platform.OS === 'ios' ? 'auto' : 'light'} />
+          <AuthProvider>
+            <AuthGuard>
+              <Stack screenOptions={{ headerShown: false }}>
+                <Stack.Screen name="auth" options={{ headerShown: false }} />
+                <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+                <Stack.Screen name="share/index" options={{ presentation: 'modal' }} />
+                <Stack.Screen name="link/[id]" options={{ headerShown: false, title: 'Link Details' }} />
+                <Stack.Screen name="+not-found" />
+              </Stack>
+            </AuthGuard>
+            <StatusBar style={Platform.OS === 'ios' ? 'auto' : 'light'} />
+          </AuthProvider>
         </ThemeProvider>
       </GestureHandlerRootView>
     </SafeAreaProvider>
