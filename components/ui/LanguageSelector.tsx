@@ -24,7 +24,9 @@ const LanguageSelector = () => {
   const confirmLanguageChange = async () => {
     await i18n.changeLanguage(selectedLanguage);
     setModalVisible(false);
-    await Updates.reloadAsync();
+    if (!__DEV__) {
+      await Updates.reloadAsync();
+    }
   };
 
   return (
