@@ -57,7 +57,7 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   useEffect(() => {
     const loadTheme = async () => {
       try {
-        const savedTheme = await loadFromStorage('theme');
+        const savedTheme = await loadFromStorage<ThemeMode>('theme');
         if (savedTheme) {
           setThemeState(savedTheme);
         } else {

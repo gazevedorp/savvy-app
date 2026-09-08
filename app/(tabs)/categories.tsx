@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import type { Category } from '@/types';
 import { View, StyleSheet, FlatList, Text, TouchableOpacity, useWindowDimensions } from 'react-native';
 import { useCategoryStore } from '@/store/categoryStore';
 import { useLinkStore } from '@/store/linkStore';
@@ -29,7 +30,7 @@ export default function CategoriesScreen() {
     return links.filter(link => link.categoryIds.includes(categoryId)).length;
   };
 
-  const renderItem = ({ item }) => (
+  const renderItem = ({ item }: { item: Category }) => (
     <CategoryCard 
       category={item} 
       linkCount={getCategoryLinkCount(item.id)}

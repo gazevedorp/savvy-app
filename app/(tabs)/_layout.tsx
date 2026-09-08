@@ -31,7 +31,7 @@ export default function TabLayout() {
           fontFamily: 'Inter-Bold',
           color: colors.text,
         },
-        headerSafeAreaInsets: { top: insets.top },
+        headerStatusBarHeight: insets.top,
       }}>
       <Tabs.Screen
         name="index"

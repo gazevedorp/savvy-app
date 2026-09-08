@@ -33,7 +33,7 @@ export default function SettingsScreen() {
   const SettingItem: React.FC<SettingItemProps> = ({ icon, title, description, action, isSwitch, value }) => (
     <TouchableOpacity 
       style={[styles.settingItem, { borderBottomColor: colors.border }]}
-      onPress={isSwitch ? null : action}
+      onPress={isSwitch ? undefined : action}
       disabled={isSwitch}
     >
       <View style={styles.settingIcon}>
@@ -49,7 +49,7 @@ export default function SettingsScreen() {
       </View>
       {isSwitch ? (
         <Switch
-          value={value}
+          value={value ?? false}
           onValueChange={action}
           trackColor={{ false: colors.border, true: colors.primary }}
           thumbColor="#fff"

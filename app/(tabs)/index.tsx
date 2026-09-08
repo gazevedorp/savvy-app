@@ -11,7 +11,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { XCircle } from 'lucide-react-native';
 
 export default function AllLinksScreen() {
-  const { colors } = useTheme();
+  const { colors, theme } = useTheme();
   const { links, fetchLinks } = useLinkStore();
   const [refreshing, setRefreshing] = useState(false);
   const [filteredLinks, setFilteredLinks] = useState<Link[]>([]);
@@ -132,7 +132,7 @@ export default function AllLinksScreen() {
               style={[
                 styles.segmentButtonText,
                 { 
-                  color: activeReadStatusFilter === option.id ? (colors.theme === 'dark' ? colors.background : '#FFFFFF') : colors.primary 
+                  color: activeReadStatusFilter === option.id ? (theme === 'dark' ? colors.background : '#FFFFFF') : colors.primary
                 }
               ]}
             >

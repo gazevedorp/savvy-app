@@ -30,7 +30,7 @@ export const detectLinkType = async (url: string): Promise<LinkType> => {
       urlLower.includes('soundcloud.com') ||
       urlLower.includes('anchor.fm')
     ) {
-      return 'podcast';
+      return 'music';
     }
     
     // Image hosting
@@ -49,14 +49,14 @@ export const detectLinkType = async (url: string): Promise<LinkType> => {
       urlLower.includes('dropbox.com') ||
       urlLower.match(/\.(pdf|doc|docx|xls|xlsx|ppt|pptx)(\?.*)?$/)
     ) {
-      return 'document';
+      return 'link';
     }
     
-    // Default to article for most web pages
-    return 'article';
+    // Default to link for most web pages
+    return 'link';
   } catch (error) {
     console.error('Error detecting link type:', error);
-    return 'other';
+    return 'link';
   }
 };
 

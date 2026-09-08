@@ -22,7 +22,7 @@ export const useLinkStore = create<LinkState>((set, get) => ({
   fetchLinks: async () => {
     set({ isLoading: true, error: null });
     try {
-      const storedLinks = await loadFromStorage('links');
+      const storedLinks = await loadFromStorage<Link[]>('links');
       set({ links: storedLinks || [], isLoading: false });
     } catch (error) {
       set({ error: 'Failed to load links', isLoading: false });
@@ -37,7 +37,7 @@ export const useLinkStore = create<LinkState>((set, get) => ({
       title: linkData.title || '',
       description: linkData.description || '',
       thumbnail: linkData.thumbnail,
-      type: linkData.type || 'article',
+      type: linkData.type || 'link',
       categoryIds: linkData.categoryIds || [],
       createdAt: linkData.createdAt || new Date().toISOString(),
       isRead: linkData.isRead || false,

@@ -1,4 +1,5 @@
 import React from 'react';
+import type { GestureResponderEvent } from 'react-native';
 import { View, StyleSheet, Text, TouchableOpacity, Image } from 'react-native';
 import { Link } from '@/types';
 import { useTheme } from '@/context/ThemeContext';
@@ -21,12 +22,12 @@ export default function LinkCard({ link }: LinkCardProps) {
     router.push(`/link/${link.id}`);
   };
   
-  const handleToggleRead = (e: Event) => {
+  const handleToggleRead = (e: GestureResponderEvent) => {
     e.stopPropagation();
     updateLink(link.id, { isRead: !link.isRead });
   };
   
-  const handleOpenExternal = (e: Event) => {
+  const handleOpenExternal = (e: GestureResponderEvent) => {
     e.stopPropagation();
     // This would use Linking in a real implementation
     console.log(`Opening ${link.url} externally`);

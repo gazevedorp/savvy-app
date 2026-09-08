@@ -120,7 +120,7 @@ export default function ShareScreen() {
     }
 
     const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      mediaTypes: ['images'],
       allowsEditing: true,
       // aspect: [4, 3], // Removido para permitir corte livre
       quality: 0.8,
