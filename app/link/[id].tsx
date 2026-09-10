@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, StyleSheet, Text, ScrollView, TouchableOpacity, Linking, Share, Image, Platform } from 'react-native';
+import { View, StyleSheet, Text, ScrollView, TouchableOpacity, Linking, Share, Image, Platform, Alert } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useLinkStore } from '@/store/linkStore';
 import { useTheme } from '@/context/ThemeContext';
@@ -41,11 +41,26 @@ export default function LinkDetailScreen() {
   };
 
   const handleShareLink = async () => {
-    if (link) {
+    if (!link) return;
+    const message = `${link.title} - ${link.url}`;
+    try {
+      if (Platform.OS === 'web' && typeof navigator !== 'undefined' && 'share' in navigator) {
+        await navigator.share({ title: link.title, text: message, url: link.url });
+        return;
+      }
       await Share.share({
-        message: `${link.title} - ${link.url}`,
+        message,
         url: link.url,
       });
+    } catch (error) {
+      const cancelled = error instanceof Error && /cancel/i.test(error.message);
+      if (cancelled) return;
+      if (Platform.OS === 'web' && typeof navigator !== 'undefined' && navigator.clipboard) {
+        await navigator.clipboard.writeText(message);
+        Alert.alert('Link copiado', 'O compartilhamento nativo não está disponível neste navegador.');
+        return;
+      }
+      Alert.alert('Erro', 'Não foi possível compartilhar este item.');
     }
   };
 

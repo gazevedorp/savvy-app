@@ -2,7 +2,6 @@ import React from 'react';
 import { View, StyleSheet, Text } from 'react-native';
 import { useTheme } from '@/context/ThemeContext';
 import { BookmarkPlus, FolderPlus, Search } from 'lucide-react-native';
-import Animated, { FadeIn } from 'react-native-reanimated';
 
 interface EmptyStateProps {
   title: string;
@@ -30,10 +29,7 @@ export default function EmptyState({ title, description, icon }: EmptyStateProps
   };
 
   return (
-    <Animated.View 
-      style={styles.container}
-      entering={FadeIn.duration(500).delay(300)}
-    >
+    <View style={styles.container}>
       <View style={[styles.iconContainer, { backgroundColor: colors.primaryLight }]}>
         {renderIcon()}
       </View>
@@ -41,7 +37,7 @@ export default function EmptyState({ title, description, icon }: EmptyStateProps
       <Text style={[styles.description, { color: colors.textSecondary }]}>
         {description}
       </Text>
-    </Animated.View>
+    </View>
   );
 }
 

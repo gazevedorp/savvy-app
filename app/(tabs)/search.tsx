@@ -14,7 +14,6 @@ import { useTheme } from '@/context/ThemeContext';
 import { Search as SearchIcon, X } from 'lucide-react-native';
 import EmptyState from '@/components/ui/EmptyState';
 import { Link } from '@/types';
-import Animated, { FadeIn, FadeOut } from 'react-native-reanimated';
 import { TouchableOpacity } from 'react-native';
 import { MediaItem, MediaKind, mediaItemToLink, searchMedia } from '@/utils/itunes';
 import MediaSearchResultCard from '@/components/ui/MediaSearchResultCard';
@@ -181,14 +180,13 @@ export default function SearchScreen() {
         searchQuery.length === 0 || savedResults.length === 0 ? (
           emptySaved
         ) : (
-          <Animated.FlatList
-            entering={FadeIn}
-            exiting={FadeOut}
+          <FlatList
             data={savedResults}
             renderItem={renderSaved}
             keyExtractor={(item) => item.id || item.url}
             contentContainerStyle={styles.listContent}
             showsVerticalScrollIndicator={false}
+            keyboardShouldPersistTaps="handled"
           />
         )
       ) : loading ? (
@@ -211,9 +209,7 @@ export default function SearchScreen() {
           icon="Search"
         />
       ) : (
-        <Animated.FlatList
-          entering={FadeIn}
-          exiting={FadeOut}
+        <FlatList
           data={mediaResults}
           renderItem={({ item }) => (
             <MediaSearchResultCard
@@ -225,6 +221,7 @@ export default function SearchScreen() {
           keyExtractor={(item) => `${item.source}-${item.sourceId}-${item.title}`}
           contentContainerStyle={styles.listContent}
           showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
         />
       )}
     </View>
