@@ -1,33 +1,34 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from 'react';
+import { View, StyleSheet, FlatList, RefreshControl } from 'react-native';
+import { useLinkStore } from '@/store/linkStore';
+import LinkCard from '@/components/ui/LinkCard';
+import EmptyState from '@/components/ui/EmptyState';
+import { useTheme } from '@/context/ThemeContext';
+import FilterBar from '@/components/ui/FilterBar';
+import { Link } from '@/types';
+import AddLinkButton from '@/components/ui/AddLinkButton';
+import { useLocalSearchParams, useRouter } from 'expo-router';
+import Screen from '@/components/ui/Screen';
+import SegmentedControl from '@/components/ui/SegmentedControl';
+import Chip from '@/components/ui/Chip';
+import HomeHeader from '@/components/ui/HomeHeader';
 import {
-  View,
-  StyleSheet,
-  FlatList,
-  RefreshControl,
-  Text,
-  TouchableOpacity,
-} from "react-native";
-import { useLinkStore } from "@/store/linkStore";
-import LinkCard from "@/components/ui/LinkCard";
-import EmptyState from "@/components/ui/EmptyState";
-import { useTheme } from "@/context/ThemeContext";
-import FilterBar from "@/components/ui/FilterBar";
-import { Link } from "@/types";
-import AddLinkButton from "@/components/ui/AddLinkButton";
-import { useLocalSearchParams, useRouter } from "expo-router";
-import { XCircle } from "lucide-react-native";
-import Screen from "@/components/ui/Screen";
-import SegmentedControl from "@/components/ui/SegmentedControl";
+  READ_STATUS_OPTIONS,
+  TYPE_FILTER_OPTIONS,
+  ReadStatusFilter,
+  filterLinks,
+  formatHomeCount,
+  getHomeEmptyState,
+} from '@/utils/home';
 
 export default function AllLinksScreen() {
-  const { colors, spacing, radius, typography } = useTheme();
+  const { colors, spacing } = useTheme();
   const { links, fetchLinks } = useLinkStore();
   const [refreshing, setRefreshing] = useState(false);
-  const [filteredLinks, setFilteredLinks] = useState<Link[]>([]);
-  const [activeTypeFilter, setActiveTypeFilter] = useState("all");
-  const [activeReadStatusFilter, setActiveReadStatusFilter] = useState<
-    "all" | "read" | "unread"
-  >("unread");
+  const [typeSheetOpen, setTypeSheetOpen] = useState(false);
+  const [activeTypeFilter, setActiveTypeFilter] = useState('all');
+  const [activeReadStatusFilter, setActiveReadStatusFilter] =
+    useState<ReadStatusFilter>('unread');
   const params = useLocalSearchParams<{
     categoryId?: string;
     categoryName?: string;
@@ -52,25 +53,15 @@ export default function AllLinksScreen() {
     }
   }, [params.categoryId, params.categoryName]);
 
-  useEffect(() => {
-    let tempLinks = links;
-
-    if (activeCategoryFilter) {
-      tempLinks = tempLinks.filter((link) =>
-        link.categoryIds?.includes(activeCategoryFilter.id!)
-      );
-    }
-
-    if (activeTypeFilter !== "all") {
-      tempLinks = tempLinks.filter((link) => link.type === activeTypeFilter);
-    }
-    if (activeReadStatusFilter === "read") {
-      tempLinks = tempLinks.filter((link) => link.is_read);
-    } else if (activeReadStatusFilter === "unread") {
-      tempLinks = tempLinks.filter((link) => !link.is_read);
-    }
-    setFilteredLinks(tempLinks);
-  }, [links, activeTypeFilter, activeReadStatusFilter, activeCategoryFilter]);
+  const filteredLinks = useMemo(
+    () =>
+      filterLinks(links, {
+        type: activeTypeFilter,
+        status: activeReadStatusFilter,
+        categoryId: activeCategoryFilter?.id,
+      }),
+    [links, activeTypeFilter, activeReadStatusFilter, activeCategoryFilter]
+  );
 
   const onRefresh = async () => {
     setRefreshing(true);
@@ -80,118 +71,120 @@ export default function AllLinksScreen() {
 
   const renderItem = ({ item }: { item: Link }) => <LinkCard link={item} />;
 
-  const typeFilterOptions = [
-    { id: "all", label: "Todos" },
-    { id: "link", label: "Links" },
-    { id: "video", label: "Vídeos" },
-    { id: "music", label: "Música" },
-    { id: "movie", label: "Filmes" },
-    { id: "other", label: "Notas" },
-  ];
-
-  const readStatusFilterOptions = [
-    { id: "unread", label: "A fazer" },
-    { id: "read", label: "Feitos" },
-    { id: "all", label: "Todos" },
-  ];
-
   const clearCategoryFilter = () => {
     setActiveCategoryFilter(null);
-    router.replace("/");
+    router.replace('/');
   };
 
-  const hasActiveFilters =
-    !!activeCategoryFilter ||
-    activeTypeFilter !== "all" ||
-    activeReadStatusFilter !== "all";
+  const clearFilters = () => {
+    setActiveTypeFilter('all');
+    setActiveReadStatusFilter('unread');
+    if (activeCategoryFilter) {
+      clearCategoryFilter();
+    }
+  };
+
+  const empty = getHomeEmptyState({
+    totalCount: links.length,
+    status: activeReadStatusFilter,
+    typeId: activeTypeFilter,
+    categoryName: activeCategoryFilter?.name,
+  });
+
+  const countLabel = formatHomeCount(
+    filteredLinks.length,
+    activeReadStatusFilter,
+    activeTypeFilter,
+    activeCategoryFilter?.name
+  );
 
   return (
     <Screen>
-      <FilterBar
-        options={typeFilterOptions}
-        activeFilter={activeTypeFilter}
-        onFilterChange={setActiveTypeFilter}
-      />
+      <HomeHeader title="Salvos" subtitle={countLabel} />
 
-      {activeCategoryFilter && (
-        <View
-          style={[
-            styles.activeCategoryFilterContainer,
-            {
-              backgroundColor: colors.card,
-              borderColor: colors.border,
-              borderRadius: radius.sm,
-              paddingHorizontal: spacing.md,
-              paddingVertical: spacing.sm,
-              marginHorizontal: spacing.md,
-              marginTop: spacing.sm,
-            },
-          ]}
-        >
-          <Text
-            style={[
-              typography.caption,
-              { color: colors.text, flex: 1, marginRight: spacing.xs },
-            ]}
-          >
-            Categoria: {activeCategoryFilter.name}
-          </Text>
-          <TouchableOpacity onPress={clearCategoryFilter} accessibilityLabel="Limpar filtro de categoria">
-            <XCircle size={20} color={colors.textSecondary} />
-          </TouchableOpacity>
-        </View>
-      )}
+      <View
+        style={[
+          styles.filters,
+          {
+            borderBottomColor: colors.border,
+            paddingBottom: spacing.xs,
+          },
+        ]}
+      >
+        <FilterBar
+          options={[...TYPE_FILTER_OPTIONS]}
+          activeFilter={activeTypeFilter}
+          onFilterChange={setActiveTypeFilter}
+        />
 
-      <SegmentedControl
-        options={readStatusFilterOptions}
-        value={activeReadStatusFilter}
-        onChange={(id) =>
-          setActiveReadStatusFilter(id as "all" | "read" | "unread")
+        <SegmentedControl
+          options={[...READ_STATUS_OPTIONS]}
+          value={activeReadStatusFilter}
+          onChange={(id) => setActiveReadStatusFilter(id as ReadStatusFilter)}
+        />
+
+        {activeCategoryFilter ? (
+          <View style={[styles.categoryRow, { paddingHorizontal: spacing.md }]}>
+            <Chip
+              label={`Categoria: ${activeCategoryFilter.name}`}
+              selected
+              onClear={clearCategoryFilter}
+            />
+          </View>
+        ) : null}
+      </View>
+
+      <FlatList
+        data={filteredLinks}
+        renderItem={renderItem}
+        keyExtractor={(item) => item.id ?? ''}
+        contentContainerStyle={{
+          padding: spacing.md,
+          paddingBottom: 112,
+          flexGrow: 1,
+        }}
+        showsVerticalScrollIndicator={false}
+        ListEmptyComponent={
+          <EmptyState
+            title={empty.title}
+            description={empty.description}
+            icon={empty.icon}
+            actionLabel={
+              empty.action === 'add'
+                ? 'Adicionar item'
+                : empty.action === 'clear'
+                  ? 'Limpar filtros'
+                  : undefined
+            }
+            onAction={
+              empty.action === 'add'
+                ? () => setTypeSheetOpen(true)
+                : empty.action === 'clear'
+                  ? clearFilters
+                  : undefined
+            }
+          />
+        }
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor={colors.primary}
+            colors={[colors.primary]}
+          />
         }
       />
 
-      {filteredLinks.length > 0 ? (
-        <FlatList
-          data={filteredLinks}
-          renderItem={renderItem}
-          keyExtractor={(item) => item.id ?? ""}
-          contentContainerStyle={{ padding: spacing.md, paddingBottom: 100 }}
-          showsVerticalScrollIndicator={false}
-          refreshControl={
-            <RefreshControl
-              refreshing={refreshing}
-              onRefresh={onRefresh}
-              tintColor={colors.primary}
-              colors={[colors.primary]}
-            />
-          }
-        />
-      ) : (
-        <EmptyState
-          title={
-            hasActiveFilters
-              ? "Nenhum Savvy corresponde aos filtros"
-              : "Nenhum Savvy salvo ainda"
-          }
-          description={
-            hasActiveFilters
-              ? "Tente ajustar os filtros de tipo ou status."
-              : "Salve links, imagens, textos e mais para vê-los aqui."
-          }
-          icon="BookmarkPlus"
-        />
-      )}
-
-      <AddLinkButton />
+      <AddLinkButton visible={typeSheetOpen} onVisibleChange={setTypeSheetOpen} />
     </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  activeCategoryFilterContainer: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    borderWidth: 1,
+  filters: {
+    borderBottomWidth: StyleSheet.hairlineWidth,
+  },
+  categoryRow: {
+    paddingBottom: 8,
   },
 });

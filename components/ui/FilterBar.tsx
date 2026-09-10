@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, StyleSheet, ScrollView } from 'react-native';
+import { StyleSheet, ScrollView, type StyleProp, type ViewStyle } from 'react-native';
 import { useTheme } from '@/context/ThemeContext';
 import Animated, { FadeIn } from 'react-native-reanimated';
 import Chip from '@/components/ui/Chip';
@@ -13,14 +13,27 @@ interface FilterBarProps {
   options: FilterOption[];
   activeFilter: string;
   onFilterChange: (filterId: string) => void;
+  bordered?: boolean;
+  style?: StyleProp<ViewStyle>;
 }
 
-export default function FilterBar({ options, activeFilter, onFilterChange }: FilterBarProps) {
+export default function FilterBar({
+  options,
+  activeFilter,
+  onFilterChange,
+  bordered = false,
+  style,
+}: FilterBarProps) {
   const { colors, spacing } = useTheme();
 
   return (
     <Animated.View
-      style={[styles.container, { borderBottomColor: colors.border, paddingVertical: spacing.sm }]}
+      style={[
+        styles.container,
+        bordered && { borderBottomColor: colors.border, borderBottomWidth: 1 },
+        { paddingVertical: spacing.xs },
+        style,
+      ]}
       entering={FadeIn.duration(300)}
     >
       <ScrollView
@@ -43,7 +56,5 @@ export default function FilterBar({ options, activeFilter, onFilterChange }: Fil
 }
 
 const styles = StyleSheet.create({
-  container: {
-    borderBottomWidth: 1,
-  },
+  container: {},
 });

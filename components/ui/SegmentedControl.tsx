@@ -25,10 +25,12 @@ export default function SegmentedControl({
       style={[
         styles.container,
         {
-          borderColor: colors.primary,
-          borderRadius: radius.sm,
+          backgroundColor: colors.card,
+          borderColor: colors.border,
+          borderRadius: radius.md,
           marginHorizontal: spacing.md,
-          marginVertical: spacing.sm,
+          marginTop: spacing.xxs,
+          marginBottom: spacing.sm,
         },
       ]}
     >
@@ -41,9 +43,9 @@ export default function SegmentedControl({
               styles.segment,
               {
                 backgroundColor: selected ? colors.primary : 'transparent',
-                borderRightWidth: index < options.length - 1 ? 1 : 0,
-                borderRightColor: colors.primary,
-                paddingVertical: spacing.xs,
+                borderRightWidth: index < options.length - 1 ? StyleSheet.hairlineWidth : 0,
+                borderRightColor: colors.border,
+                paddingVertical: spacing.xs + 2,
               },
             ]}
             onPress={() => onChange(option.id)}

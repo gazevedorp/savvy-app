@@ -1,28 +1,61 @@
-import React from "react";
+import React from 'react';
 import {
   View,
   StyleSheet,
   Text,
   TouchableOpacity,
   Image,
-  Linking,
   type GestureResponderEvent,
-} from "react-native";
-import { Link } from "@/types";
-import { useTheme } from "@/context/ThemeContext";
-import { useRouter } from "expo-router";
-import { Check, ExternalLink, Clock } from "lucide-react-native";
-import { formatRelativeTime } from "@/utils/dateUtils";
-import Animated, { FadeIn } from "react-native-reanimated";
-import { useLinkStore } from "@/store/linkStore";
-import { getTypeColor, getTypeLabel, isMediaType } from "@/utils/media";
+} from 'react-native';
+import { Link } from '@/types';
+import { useTheme } from '@/context/ThemeContext';
+import { useRouter } from 'expo-router';
+import {
+  Check,
+  FileText,
+  Film,
+  Headphones,
+  Image as ImageIcon,
+  Link as LinkIcon,
+  Video,
+} from 'lucide-react-native';
+import { formatRelativeTime } from '@/utils/dateUtils';
+import Animated, { FadeIn } from 'react-native-reanimated';
+import { useLinkStore } from '@/store/linkStore';
+import { getLinkSubtitle, getTypeColor, getTypeLabel } from '@/utils/media';
+import Chip from '@/components/ui/Chip';
 
 interface LinkCardProps {
   link: Link;
 }
 
+function TypePlaceholder({
+  type,
+  color,
+  size,
+}: {
+  type: Link['type'];
+  color: string;
+  size: number;
+}) {
+  switch (type) {
+    case 'video':
+      return <Video size={size} color={color} />;
+    case 'image':
+      return <ImageIcon size={size} color={color} />;
+    case 'music':
+      return <Headphones size={size} color={color} />;
+    case 'movie':
+      return <Film size={size} color={color} />;
+    case 'other':
+      return <FileText size={size} color={color} />;
+    default:
+      return <LinkIcon size={size} color={color} />;
+  }
+}
+
 export default function LinkCard({ link }: LinkCardProps) {
-  const { colors, spacing, radius, typography } = useTheme();
+  const { colors, spacing, radius, typography, elevation } = useTheme();
   const router = useRouter();
   const { updateLink } = useLinkStore();
 
@@ -36,113 +69,130 @@ export default function LinkCard({ link }: LinkCardProps) {
     updateLink(link.id, { is_read: !link.is_read });
   };
 
-  const handleOpenLink = async (e: GestureResponderEvent) => {
-    e.stopPropagation();
-    if (link?.url) {
-      await Linking.openURL(link.url);
-    }
-  };
-
-  const isLocalImage = link.type === "image" && link.url.startsWith("file://");
-
   const typeLabel = getTypeLabel(link.type);
   const typeColor = getTypeColor(link.type, colors.primary);
   const artwork = link.metadata?.artworkUrl || link.thumbnail;
-  const isMedia = isMediaType(link.type);
-  const subtitle = isMedia
-    ? [link.metadata?.artistName, link.metadata?.releaseYear].filter(Boolean).join(" · ")
-    : isLocalImage
-      ? "Imagem do dispositivo"
-      : link.url;
+  const subtitle = getLinkSubtitle(link);
+  const isMovie = link.type === 'movie';
+  const done = !!link.is_read;
 
   return (
-    <Animated.View entering={FadeIn.duration(300).delay(100)}>
+    <Animated.View entering={FadeIn.duration(300).delay(80)}>
       <TouchableOpacity
         style={[
           styles.container,
           {
             backgroundColor: colors.card,
             borderColor: colors.border,
-            borderRadius: radius.md,
-            padding: spacing.md,
-            marginBottom: spacing.md,
-            opacity: link.is_read ? 0.8 : 1,
+            borderRadius: radius.lg,
+            padding: spacing.sm,
+            marginBottom: spacing.sm,
+            opacity: done ? 0.78 : 1,
           },
+          elevation.sm,
         ]}
         onPress={handlePress}
-        activeOpacity={0.8}
+        activeOpacity={0.82}
+        accessibilityRole="button"
+        accessibilityLabel={link.title}
       >
         {artwork ? (
           <Image
             source={{ uri: artwork }}
-            style={[styles.artwork, link.type === "movie" ? styles.poster : styles.cover]}
+            style={[
+              styles.artwork,
+              { borderRadius: radius.sm, marginRight: spacing.sm },
+              isMovie ? styles.poster : styles.cover,
+            ]}
           />
-        ) : null}
+        ) : (
+          <View
+            style={[
+              styles.artwork,
+              styles.placeholder,
+              isMovie ? styles.poster : styles.cover,
+              {
+                backgroundColor: `${typeColor}22`,
+                borderRadius: radius.sm,
+                marginRight: spacing.sm,
+              },
+            ]}
+          >
+            <TypePlaceholder type={link.type} color={typeColor} size={22} />
+          </View>
+        )}
 
-        <View style={styles.contentContainer}>
-          <View style={styles.titleRow}>
+        <View style={styles.content}>
+          <Text
+            style={[typography.heading, { color: colors.text }]}
+            numberOfLines={2}
+          >
+            {link.title}
+          </Text>
+          {subtitle ? (
             <Text
               style={[
-                styles.title,
-                typography.label,
+                typography.caption,
                 {
-                  fontFamily: "Inter-Bold",
-                  color: colors.text,
-                  textDecorationLine: link.is_read ? "line-through" : "none",
+                  color: colors.textSecondary,
+                  fontFamily: 'Inter-Regular',
+                  marginTop: spacing.xxs,
                 },
               ]}
-              numberOfLines={2}
+              numberOfLines={1}
             >
-              {link.title}
+              {subtitle}
             </Text>
-          </View>
+          ) : null}
 
-          <Text
-            style={[styles.url, typography.micro, { color: colors.textSecondary }]}
-            numberOfLines={1}
-          >
-            {subtitle}
-          </Text>
-
-          <View style={styles.footer}>
-            <View
+          <View style={[styles.footer, { marginTop: spacing.xs }]}>
+            <Chip label={typeLabel} variant="tag" tint={typeColor} />
+            <Text
               style={[
-                styles.typeTag,
-                { backgroundColor: typeColor + "20", borderRadius: radius.lg },
+                typography.micro,
+                { color: colors.textSecondary, marginLeft: spacing.xs },
               ]}
             >
-              <Text style={[styles.typeText, { color: typeColor }]}>
-                {typeLabel}
-              </Text>
-            </View>
-
-            <Text style={[styles.time, typography.micro, { color: colors.textSecondary }]}>
               {formatRelativeTime(link.created_at)}
             </Text>
           </View>
         </View>
 
-        <View style={styles.actions}>
-          <TouchableOpacity
-            style={styles.actionButton}
-            onPress={handleToggleRead}
+        <TouchableOpacity
+          style={[
+            styles.doneButton,
+            {
+              backgroundColor: done ? `${colors.success}22` : colors.primaryLight,
+              borderColor: done ? colors.success : colors.border,
+              marginLeft: spacing.xs,
+            },
+          ]}
+          onPress={handleToggleRead}
+          accessibilityRole="button"
+          accessibilityLabel={done ? 'Marcar como a fazer' : 'Marcar como feito'}
+          accessibilityState={{ selected: done }}
+        >
+          <View
+            style={[
+              styles.doneIcon,
+              { backgroundColor: done ? colors.success : 'transparent' },
+            ]}
           >
-            {link.is_read ? (
-              <Check size={20} color={colors.success} />
-            ) : (
-              <Clock size={20} color={colors.textSecondary} />
-            )}
-          </TouchableOpacity>
-
-          {!isLocalImage && link.url && (
-            <TouchableOpacity
-              style={styles.actionButton}
-              onPress={handleOpenLink}
-            >
-              <ExternalLink size={20} color={colors.primary} />
-            </TouchableOpacity>
-          )}
-        </View>
+            <Check size={14} color={done ? colors.onPrimary : colors.primary} />
+          </View>
+          <Text
+            style={[
+              typography.micro,
+              {
+                color: done ? colors.success : colors.primary,
+                fontFamily: 'Inter-Medium',
+                marginTop: 2,
+              },
+            ]}
+          >
+            Feito
+          </Text>
+        </TouchableOpacity>
       </TouchableOpacity>
     </Animated.View>
   );
@@ -150,70 +200,48 @@ export default function LinkCard({ link }: LinkCardProps) {
 
 const styles = StyleSheet.create({
   container: {
-    flexDirection: "row",
+    flexDirection: 'row',
+    alignItems: 'center',
     borderWidth: 1,
   },
-  contentContainer: {
-    flex: 1,
-  },
   artwork: {
-    borderRadius: 8,
-    marginRight: 12,
-    backgroundColor: "#111",
+    backgroundColor: '#111',
   },
   cover: {
-    width: 56,
-    height: 56,
+    width: 72,
+    height: 72,
   },
   poster: {
-    width: 44,
-    height: 64,
+    width: 54,
+    height: 80,
   },
-  titleRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "flex-start",
+  placeholder: {
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  title: {
-    marginBottom: 4,
+  content: {
     flex: 1,
-  },
-  url: {
-    marginBottom: 8,
-  },
-  description: {
-    fontFamily: "Inter-Regular",
-    fontSize: 12,
-    marginBottom: 12,
-    lineHeight: 18,
+    minWidth: 0,
   },
   footer: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
+    flexDirection: 'row',
+    alignItems: 'center',
+    flexWrap: 'wrap',
   },
-  typeTag: {
+  doneButton: {
+    minWidth: 56,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 8,
     paddingHorizontal: 8,
-    paddingVertical: 4,
     borderRadius: 12,
+    borderWidth: 1,
   },
-  typeText: {
-    fontFamily: "Inter-Medium",
-    fontSize: 10,
-  },
-  time: {
-    fontFamily: "Inter-Regular",
-    fontSize: 10,
-  },
-  actions: {
-    justifyContent: "space-between",
-    marginLeft: 12,
-  },
-  actionButton: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    justifyContent: "center",
-    alignItems: "center",
+  doneIcon: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 });
