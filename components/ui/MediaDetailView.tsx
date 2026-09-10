@@ -134,7 +134,7 @@ const styles = StyleSheet.create({
     height: 360,
   },
   heroOverlay: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     justifyContent: 'flex-end',
     padding: 20,
   },

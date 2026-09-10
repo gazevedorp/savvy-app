@@ -28,19 +28,20 @@ Um aplicativo React Native desenvolvido com Expo Router para organizar e gerenci
 
 ## 🛠 Tecnologias
 
-- **React Native** com Expo
+- **React Native** com Expo SDK 57
 - **Expo Router** para navegação
 - **TypeScript** para tipagem
 - **Supabase** para autenticação e banco de dados
 - **Zustand** para gerenciamento de estado
-- **React Native Reanimated** para animações
+- **React Native Reanimated 4** para animações
 - **Lucide React Native** para ícones
 
 ## 📱 Configuração e Instalação
 
 ### 1. Pré-requisitos
-- Node.js 18+
-- Expo CLI
+- Node.js 20+ (24 LTS indicado em `.nvmrc`)
+- Yarn Classic 1.22.22 (`yarn.lock` versionado)
+- Expo CLI / Expo Go compatível com SDK 57
 - Conta no Supabase
 
 ### 2. Instalação
@@ -80,6 +81,19 @@ yarn typecheck
 # Testes (sem watch)
 yarn test:ci
 ```
+
+## Expo SDK 57
+
+O app roda em **Expo SDK 57** (React Native 0.86, React 19.2, Reanimated 4 + Worklets). A Nova Arquitetura está habilitada.
+
+```sh
+yarn install --frozen-lockfile
+yarn typecheck
+yarn test:ci
+npx expo install --check
+```
+
+Ao atualizar o SDK de novo, siga o [guia oficial](https://docs.expo.dev/workflow/upgrading-expo-sdk-walkthrough/) e as [notas do SDK 57](https://expo.dev/changelog/sdk-57).
 
 ## 🎵 Música e filmes (APIs públicas)
 

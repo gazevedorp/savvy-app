@@ -1,10 +1,9 @@
 import React from 'react';
 import { View, StyleSheet, Platform } from 'react-native';
-import { WebView as RNWebView } from 'react-native-webview';
+import { WebView as RNWebView, type WebViewProps as NativeWebViewProps } from 'react-native-webview';
 
-interface WebViewProps {
+interface WebViewProps extends Omit<NativeWebViewProps, 'source'> {
   url: string;
-  style?: object;
 }
 
 export default function WebView({ url, style, ...rest }: WebViewProps) {

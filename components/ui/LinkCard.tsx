@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   Image,
   Linking,
+  type GestureResponderEvent,
 } from "react-native";
 import { Link } from "@/types";
 import { useTheme } from "@/context/ThemeContext";
@@ -29,13 +30,13 @@ export default function LinkCard({ link }: LinkCardProps) {
     router.push(`/link/${link.id}`);
   };
 
-  const handleToggleRead = (e: any) => {
+  const handleToggleRead = (e: GestureResponderEvent) => {
     e.stopPropagation();
     if (!link.id) return;
     updateLink(link.id, { is_read: !link.is_read });
   };
 
-  const handleOpenLink = async (e: any) => {
+  const handleOpenLink = async (e: GestureResponderEvent) => {
     e.stopPropagation();
     if (link?.url) {
       await Linking.openURL(link.url);
