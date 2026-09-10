@@ -232,34 +232,9 @@ export default function LinkDetailScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    paddingTop: 24,
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 16,
-    borderBottomWidth: 1,
-  },
-  backButton: {
-    marginRight: 16,
-  },
-  headerTitle: {
-    fontFamily: 'Inter-Bold',
-    fontSize: 16,
-    flex: 1,
-  },
   content: {
     flex: 1,
     padding: 16,
-  },
-  linkCard: {
-    borderRadius: 12,
-    padding: 16,
-    borderWidth: 1,
-    marginBottom: 16,
   },
   title: {
     fontFamily: 'Inter-Bold',
@@ -282,15 +257,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     marginBottom: 12,
-  },
-  typeTag: {
-    paddingHorizontal: 12,
-    paddingVertical: 4,
-    borderRadius: 16,
-  },
-  typeText: {
-    fontFamily: 'Inter-Medium',
-    fontSize: 10,
   },
   dateText: {
     fontFamily: 'Inter-Regular',
