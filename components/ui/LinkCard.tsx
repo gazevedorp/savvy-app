@@ -1,11 +1,11 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   View,
   StyleSheet,
   Text,
-  TouchableOpacity,
+  Pressable,
   Image,
-  type GestureResponderEvent,
+  Platform,
 } from 'react-native';
 import { Link } from '@/types';
 import { useTheme } from '@/context/ThemeContext';
@@ -58,13 +58,13 @@ export default function LinkCard({ link }: LinkCardProps) {
   const { colors, spacing, radius, typography, elevation } = useTheme();
   const router = useRouter();
   const { updateLink } = useLinkStore();
+  const [artFailed, setArtFailed] = useState(false);
 
   const handlePress = () => {
     router.push(`/link/${link.id}`);
   };
 
-  const handleToggleRead = (e: GestureResponderEvent) => {
-    e.stopPropagation();
+  const handleToggleRead = () => {
     if (!link.id) return;
     updateLink(link.id, { is_read: !link.is_read });
   };
@@ -76,9 +76,8 @@ export default function LinkCard({ link }: LinkCardProps) {
   const isMovie = link.type === 'movie';
   const done = !!link.is_read;
 
-  return (
-    <Animated.View entering={FadeIn.duration(300).delay(80)}>
-      <TouchableOpacity
+  const card = (
+      <View
         style={[
           styles.container,
           {
@@ -91,74 +90,78 @@ export default function LinkCard({ link }: LinkCardProps) {
           },
           elevation.sm,
         ]}
-        onPress={handlePress}
-        activeOpacity={0.82}
-        accessibilityRole="button"
-        accessibilityLabel={link.title}
       >
-        {artwork ? (
-          <Image
-            source={{ uri: artwork }}
-            style={[
-              styles.artwork,
-              { borderRadius: radius.sm, marginRight: spacing.sm },
-              isMovie ? styles.poster : styles.cover,
-            ]}
-          />
-        ) : (
-          <View
-            style={[
-              styles.artwork,
-              styles.placeholder,
-              isMovie ? styles.poster : styles.cover,
-              {
-                backgroundColor: `${typeColor}22`,
-                borderRadius: radius.sm,
-                marginRight: spacing.sm,
-              },
-            ]}
-          >
-            <TypePlaceholder type={link.type} color={typeColor} size={22} />
-          </View>
-        )}
-
-        <View style={styles.content}>
-          <Text
-            style={[typography.heading, { color: colors.text }]}
-            numberOfLines={2}
-          >
-            {link.title}
-          </Text>
-          {subtitle ? (
-            <Text
+        <Pressable
+          style={styles.main}
+          onPress={handlePress}
+          accessibilityRole="button"
+          accessibilityLabel={link.title}
+        >
+          {artwork && !artFailed ? (
+            <Image
+              source={{ uri: artwork }}
+              onError={() => setArtFailed(true)}
               style={[
-                typography.caption,
+                styles.artwork,
+                { borderRadius: radius.sm, marginRight: spacing.sm },
+                isMovie ? styles.poster : styles.cover,
+              ]}
+            />
+          ) : (
+            <View
+              style={[
+                styles.artwork,
+                styles.placeholder,
+                isMovie ? styles.poster : styles.cover,
                 {
-                  color: colors.textSecondary,
-                  fontFamily: 'Inter-Regular',
-                  marginTop: spacing.xxs,
+                  backgroundColor: `${typeColor}22`,
+                  borderRadius: radius.sm,
+                  marginRight: spacing.sm,
                 },
               ]}
-              numberOfLines={1}
             >
-              {subtitle}
-            </Text>
-          ) : null}
+              <TypePlaceholder type={link.type} color={typeColor} size={22} />
+            </View>
+          )}
 
-          <View style={[styles.footer, { marginTop: spacing.xs }]}>
-            <Chip label={typeLabel} variant="tag" tint={typeColor} />
+          <View style={styles.content}>
             <Text
-              style={[
-                typography.micro,
-                { color: colors.textSecondary, marginLeft: spacing.xs },
-              ]}
+              style={[typography.heading, { color: colors.text }]}
+              numberOfLines={2}
             >
-              {formatRelativeTime(link.created_at)}
+              {link.title}
             </Text>
-          </View>
-        </View>
+            {subtitle ? (
+              <Text
+                style={[
+                  typography.caption,
+                  {
+                    color: colors.textSecondary,
+                    fontFamily: 'Inter-Regular',
+                    marginTop: spacing.xxs,
+                  },
+                ]}
+                numberOfLines={1}
+              >
+                {subtitle}
+              </Text>
+            ) : null}
 
-        <TouchableOpacity
+            <View style={[styles.footer, { marginTop: spacing.xs }]}>
+              <Chip label={typeLabel} variant="tag" tint={typeColor} />
+              <Text
+                style={[
+                  typography.micro,
+                  { color: colors.textSecondary, marginLeft: spacing.xs },
+                ]}
+              >
+                {formatRelativeTime(link.created_at)}
+              </Text>
+            </View>
+          </View>
+        </Pressable>
+
+        <Pressable
           style={[
             styles.doneButton,
             {
@@ -192,8 +195,17 @@ export default function LinkCard({ link }: LinkCardProps) {
           >
             Feito
           </Text>
-        </TouchableOpacity>
-      </TouchableOpacity>
+        </Pressable>
+      </View>
+  );
+
+  if (Platform.OS === 'web') {
+    return card;
+  }
+
+  return (
+    <Animated.View entering={FadeIn.duration(300).delay(80)}>
+      {card}
     </Animated.View>
   );
 }
@@ -203,6 +215,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     borderWidth: 1,
+  },
+  main: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    minWidth: 0,
   },
   artwork: {
     backgroundColor: '#111',
