@@ -1,5 +1,19 @@
-// Link Types
-export type LinkType = 'link' | 'video' | 'image' | 'music' | 'movie' | 'other';
+// Link Types — keep in sync with links_type_check in
+// migrations/20260910_phase_c_supabase_baseline.sql
+export const LINK_TYPES = ['link', 'video', 'image', 'music', 'movie', 'other'] as const;
+export type LinkType = (typeof LINK_TYPES)[number];
+
+export function isLinkType(value: unknown): value is LinkType {
+  return typeof value === 'string' && (LINK_TYPES as readonly string[]).includes(value);
+}
+
+/** Map legacy / unknown DB values onto the app union. */
+export function normalizeLinkType(value: unknown): LinkType {
+  if (isLinkType(value)) return value;
+  if (value === 'article' || value === 'document') return 'link';
+  if (value === 'podcast') return 'music';
+  return 'other';
+}
 
 export type MediaSource = 'itunes' | 'deezer' | 'tmdb' | 'wikipedia';
 

@@ -1,5 +1,7 @@
 # Supabase Storage Setup
 
+> Phase D+. Table schema, `links.metadata`, indexes, and table RLS are **not** here — apply [`migrations/20260910_phase_c_supabase_baseline.sql`](./migrations/20260910_phase_c_supabase_baseline.sql) first.
+
 ## Passo 1: Criar Bucket para Imagens
 
 ### Via Interface do Supabase (RECOMENDADO)

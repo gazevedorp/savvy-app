@@ -30,6 +30,11 @@ export async function loadCachedMediaMetadata(linkId: string): Promise<MediaMeta
   }
 }
 
+/**
+ * Gap-fill only: rows that already have `metadata` from Supabase keep it.
+ * AsyncStorage is not the primary path after Phase C (`links.metadata` JSONB).
+ * Phase D can delete this helper once every environment is migrated.
+ */
 export async function mergeCachedMetadata<T extends { id?: string; metadata?: MediaMetadata | null }>(
   links: T[]
 ): Promise<T[]> {

@@ -112,27 +112,24 @@ Ao salvar um resultado, o app grava título, URL, thumbnail e um objeto `metadat
 
 ### Variáveis de ambiente
 
+Obrigatórias (Dashboard → Project Settings → API). Copie `.env.example` → `.env.local`:
+
 ```bash
-# Obrigatório para login / persistência
-EXPO_PUBLIC_SUPABASE_URL=
-EXPO_PUBLIC_SUPABASE_ANON_KEY=
-
-# Opcional — país da iTunes Store (padrão BR)
-EXPO_PUBLIC_ITUNES_COUNTRY=BR
-
-# Opcional — melhora a busca de filmes (pôsteres e ficha técnica)
-EXPO_PUBLIC_TMDB_API_KEY=
+EXPO_PUBLIC_SUPABASE_URL=https://<project-ref>.supabase.co
+EXPO_PUBLIC_SUPABASE_ANON_KEY=<anon_public_key>
 ```
 
-### Banco (migração segura)
+Opcionais: `EXPO_PUBLIC_ITUNES_COUNTRY` (padrão `BR`), `EXPO_PUBLIC_TMDB_API_KEY`.
 
-O campo `links.metadata` é JSONB. Se a tabela já existir, rode:
+### Banco (Phase C)
 
-```sql
-ALTER TABLE links ADD COLUMN IF NOT EXISTS metadata JSONB DEFAULT NULL;
-```
+Aplique o SQL versionado no SQL Editor — **não** use os dumps antigos em `SUPABASE_SETUP.md` / `SUPABASE_FIX_ALL.sql`:
 
-Sem essa coluna o app ainda salva título/descrição/arte e guarda o metadata extra no AsyncStorage até a migração ser aplicada.
+[`migrations/20260910_phase_c_supabase_baseline.sql`](./migrations/20260910_phase_c_supabase_baseline.sql)
+
+Isso alinha produção com o app: `links.metadata` JSONB, tipos `link|video|image|music|movie|other`, índices `(user_id, created_at)` / `(user_id, is_read)` / GIN em `metadata`, e RLS owner-only. Guia curto: [`migrations/README.md`](./migrations/README.md). Schema descrito em [`DATABASE_SCHEMA.md`](./DATABASE_SCHEMA.md).
+
+Depois da coluna existir, o store grava/lê `metadata` no Supabase. AsyncStorage só preenche buracos em bancos ainda sem a coluna (remoção completa do dual-write = Phase D).
 
 ## 📁 Estrutura do Projeto
 
@@ -166,7 +163,10 @@ context/
 └── AuthContext.tsx      # Autenticação
 
 lib/
-└── supabase.ts          # Configuração do Supabase
+└── supabase.ts          # Cliente Supabase (URL + anon key)
+
+migrations/
+└── 20260910_phase_c_supabase_baseline.sql  # Schema + RLS (SQL Editor)
 
 store/
 ├── linkStore.ts         # Estado dos links
@@ -205,13 +205,7 @@ O `AuthGuard` verifica automaticamente o estado da autenticação e redireciona 
 
 ## 📊 Banco de Dados (Supabase)
 
-### Tabelas
-- `auth.users`: Usuários com metadados customizados (gerenciado pelo Supabase)
-
-### Dados do Usuário
-- Armazenados em `user_metadata` do auth nativo
-- Nome completo e telefone salvos automaticamente
-- Sem necessidade de tabelas customizadas
+Tabelas da app: `categories`, `links` (`metadata` JSONB + `type` CHECK), `link_categories`. Auth continua em `auth.users` (`user_metadata`: nome e telefone). Apply: [`migrations/README.md`](./migrations/README.md).
 
 ## 🚀 Deploy
 
