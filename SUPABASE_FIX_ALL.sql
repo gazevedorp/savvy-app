@@ -90,3 +90,8 @@ CREATE POLICY "Allow authenticated delete from savvy-images" ON storage.objects
   TO authenticated
   USING (bucket_id = 'savvy-images');
 */
+
+-- 8. Metadados de mídia (música / filme) — seguro para bancos já existentes
+ALTER TABLE links
+  ADD COLUMN IF NOT EXISTS metadata JSONB DEFAULT NULL;
+

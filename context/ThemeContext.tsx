@@ -57,8 +57,8 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   useEffect(() => {
     const loadTheme = async () => {
       try {
-        const savedTheme = await loadFromStorage('theme');
-        if (savedTheme) {
+        const savedTheme = await loadFromStorage<ThemeMode>('theme');
+        if (savedTheme === 'light' || savedTheme === 'dark') {
           setThemeState(savedTheme);
         } else {
           // Use system preference if no saved theme

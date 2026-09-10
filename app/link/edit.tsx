@@ -84,14 +84,18 @@ export default function EditLinkScreen() {
         else savvyTitle = 'Untitled Note';
       }
 
-      updateLink(id, {
+      const payload: Partial<Link> = {
         title: savvyTitle,
         url: url,
         description,
         type: selectedType,
         categoryIds: selectedCategories,
-        // isRead and createdAt are not typically updated on edit, unless intended
-      });
+      };
+      if (selectedType !== 'music' && selectedType !== 'movie') {
+        payload.metadata = null;
+      }
+
+      updateLink(id, payload);
       router.back();
     }
   };
@@ -185,7 +189,7 @@ export default function EditLinkScreen() {
         ) : selectedType !== 'other' && (
           <View style={[styles.inputContainer, { backgroundColor: colors.card, borderColor: colors.border }]}>
             <LinkIcon size={20} color={colors.textSecondary} style={styles.inputIcon} />
-            <TextInput style={[styles.input, { color: colors.text }]} placeholder={selectedType === 'video' ? "Video URL" : "https://example.com"} placeholderTextColor={colors.textSecondary} value={url} onChangeText={setUrl} autoCapitalize="none" autoCorrect={false} keyboardType="url"/>
+            <TextInput style={[styles.input, { color: colors.text }]} placeholder={selectedType === 'video' ? "Video URL" : selectedType === 'music' ? "Music URL" : selectedType === 'movie' ? "Movie URL" : "https://example.com"} placeholderTextColor={colors.textSecondary} value={url} onChangeText={setUrl} autoCapitalize="none" autoCorrect={false} keyboardType="url"/>
           </View>
         )}
         

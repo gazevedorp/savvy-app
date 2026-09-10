@@ -9,6 +9,8 @@ import { formatRelativeTime } from '@/utils/dateUtils';
 import WebView from '@/components/WebView';
 import { Link } from '@/types';
 import ConfirmationModal from '@/components/modals/ConfirmationModal';
+import MediaDetailView from '@/components/ui/MediaDetailView';
+import { getTypeLabel, isMediaType } from '@/utils/media';
 
 export default function LinkDetailScreen() {
   const { id } = useLocalSearchParams();
@@ -61,7 +63,7 @@ export default function LinkDetailScreen() {
   };
 
   const getCategoryNames = () => {
-    if (!link?.categoryIds || !link.categoryIds.length) return 'No categories';
+    if (!link?.categoryIds || !link.categoryIds.length) return 'Nenhuma categoria';
     
     return link.categoryIds
       .map(catId => categories.find(cat => cat.id === catId)?.name)
@@ -78,6 +80,7 @@ export default function LinkDetailScreen() {
   }
 
   const isLocalImage = link.type === 'image' && link.url.startsWith('file://');
+  const isMedia = isMediaType(link.type);
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
@@ -86,11 +89,15 @@ export default function LinkDetailScreen() {
           <ArrowLeft size={24} color={colors.text} />
         </TouchableOpacity>
         <Text style={[styles.headerTitle, { color: colors.text }]} numberOfLines={1}>
-          {link.title}
+          {isMedia ? getTypeLabel(link.type) : link.title}
         </Text>
       </View>
       
       <ScrollView style={styles.content}>
+        {isMedia ? (
+          <MediaDetailView link={link} categoryNames={getCategoryNames()} />
+        ) : (
+          <>
         <View style={[styles.linkCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
           <Text style={[styles.title, { color: colors.text }]}>{link.title}</Text>
           
@@ -113,7 +120,7 @@ export default function LinkDetailScreen() {
           <View style={styles.metaRow}>
             <View style={[styles.typeTag, { backgroundColor: colors.primaryLight }]}>
               <Text style={[styles.typeText, { color: colors.primary }]}>
-                {link.type === "other" ? "Note" : link.type.charAt(0).toUpperCase() + link.type.slice(1)}
+                {getTypeLabel(link.type)}
               </Text>
             </View>
             
@@ -149,6 +156,8 @@ export default function LinkDetailScreen() {
         ) : (
           // Optionally, show something if there's no URL and it's not an image (e.g., for 'text' type)
           <View style={styles.noPreviewContainer} />
+        )}
+          </>
         )}
       </ScrollView>
       

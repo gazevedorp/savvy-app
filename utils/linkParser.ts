@@ -1,15 +1,32 @@
 import { LinkType } from '@/types';
+import { lookupMediaFromUrl } from '@/utils/itunes';
 
 interface LinkMetadata {
   title?: string;
   description?: string;
   thumbnail?: string;
+  type?: LinkType;
+  metadata?: import('@/types').MediaMetadata;
 }
 
 // Detect link type based on URL patterns
 export const detectLinkType = async (url: string): Promise<LinkType> => {
   try {
     const urlLower = url.toLowerCase();
+
+    // Film / movie platforms (before generic video so Apple TV / iTunes movies win)
+    if (
+      urlLower.includes('imdb.com/title') ||
+      urlLower.includes('themoviedb.org/movie') ||
+      urlLower.includes('letterboxd.com/film') ||
+      urlLower.includes('netflix.com/title') ||
+      urlLower.includes('primevideo.com') ||
+      urlLower.includes('tv.apple.com') ||
+      urlLower.includes('itunes.apple.com') && urlLower.includes('movie') ||
+      urlLower.includes('play.google.com/store/movies')
+    ) {
+      return 'movie';
+    }
     
     // Music platforms
     if (
@@ -19,7 +36,8 @@ export const detectLinkType = async (url: string): Promise<LinkType> => {
       urlLower.includes('music.apple.com') ||
       urlLower.includes('soundcloud.com') ||
       urlLower.includes('bandcamp.com') ||
-      urlLower.includes('music.youtube.com')
+      urlLower.includes('music.youtube.com') ||
+      urlLower.includes('deezer.com')
     ) {
       return 'music';
     }
@@ -72,45 +90,49 @@ export const detectLinkType = async (url: string): Promise<LinkType> => {
   }
 };
 
-// Extract metadata from a URL (title, description, etc.)
+// Extract metadata from a URL (title, description, artwork)
 export const extractMetadata = async (url: string): Promise<LinkMetadata> => {
-  // In a real implementation, this would use OpenGraph or server-side scraping
-  // For this demo, we'll return a simplified implementation
   try {
-    // This is a placeholder for actual metadata extraction
-    // In a real app, you would:
-    // 1. Use a server-side API to fetch the page
-    // 2. Parse the HTML to extract meta tags
-    // 3. Return the structured data
-    
-    // For demo purposes, we're returning dummy metadata based on the URL
-    if (url.includes('youtube.com') || url.includes('youtu.be')) {
+    const media = await lookupMediaFromUrl(url);
+    if (media) {
       return {
-        title: 'YouTube Video',
-        description: 'A video from YouTube',
-        thumbnail: 'https://via.placeholder.com/300x200?text=YouTube',
+        title: media.title,
+        description: media.description || [media.subtitle, media.collectionName, media.releaseYear].filter(Boolean).join(' · '),
+        thumbnail: media.artworkUrl,
+        type: media.kind,
+        metadata: {
+          source: media.source,
+          sourceId: media.sourceId,
+          artistName: media.subtitle,
+          collectionName: media.collectionName,
+          releaseDate: media.releaseDate,
+          releaseYear: media.releaseYear,
+          genres: media.genres,
+          artworkUrl: media.artworkUrl,
+          previewUrl: media.previewUrl,
+          durationMs: media.durationMs,
+          contentAdvisory: media.contentAdvisory,
+          kind: media.itunesKind || media.kind,
+        },
       };
     }
-    
-    if (url.includes('spotify.com')) {
+
+    const detectedType = await detectLinkType(url);
+    const pathTitle = decodeURIComponent(url.split('/').filter(Boolean).pop()?.split('?')[0] || '')
+      .replace(/[-_]+/g, ' ')
+      .trim();
+
+    if (detectedType === 'video' && (url.includes('youtube.com') || url.includes('youtu.be'))) {
       return {
-        title: 'Spotify Music',
-        description: 'A track, album, or playlist from Spotify',
-        thumbnail: 'https://via.placeholder.com/300x200?text=Spotify',
+        title: pathTitle || 'Vídeo do YouTube',
+        description: 'Vídeo do YouTube',
+        type: 'video',
       };
     }
-    
-    if (url.includes('soundcloud.com')) {
-      return {
-        title: 'SoundCloud Track',
-        description: 'A track from SoundCloud',
-        thumbnail: 'https://via.placeholder.com/300x200?text=SoundCloud',
-      };
-    }
-    
+
     return {
-      title: url.split('/').pop() || 'Untitled',
-      description: 'No description available',
+      title: pathTitle || undefined,
+      type: detectedType,
     };
   } catch (error) {
     console.error('Error extracting metadata:', error);

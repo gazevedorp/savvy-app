@@ -1,5 +1,22 @@
 // Link Types
-export type LinkType = 'link' | 'video' | 'image' | 'music' | 'other';
+export type LinkType = 'link' | 'video' | 'image' | 'music' | 'movie' | 'other';
+
+export type MediaSource = 'itunes' | 'deezer' | 'tmdb' | 'wikipedia';
+
+export interface MediaMetadata {
+  source: MediaSource;
+  sourceId: string;
+  artistName?: string;
+  collectionName?: string;
+  releaseDate?: string;
+  releaseYear?: string;
+  genres?: string[];
+  artworkUrl?: string;
+  previewUrl?: string;
+  durationMs?: number;
+  contentAdvisory?: string;
+  kind?: string;
+}
 
 export interface Link {
   id?: string; // Optional because Supabase will auto-generate
@@ -14,6 +31,7 @@ export interface Link {
   is_read?: boolean; // Database field name (instead of isRead)
   read_at?: string; // Database field name (instead of readAt)
   progress?: number; // For tracking reading/watching progress (0-100)
+  metadata?: MediaMetadata | null;
 }
 
 // Category Types
