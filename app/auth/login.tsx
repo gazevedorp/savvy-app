@@ -9,13 +9,13 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useTheme } from '@/context/ThemeContext';
 import { useAuth } from '@/context/AuthContext';
 import Logo from '@/components/ui/Logo';
 import InputField from '@/components/ui/InputField';
 import Button from '@/components/ui/Button';
+import Screen from '@/components/ui/Screen';
 
 export default function LoginScreen() {
   const { colors } = useTheme();
@@ -76,7 +76,7 @@ export default function LoginScreen() {
   };
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+    <Screen safe>
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.keyboardView}
@@ -141,7 +141,7 @@ export default function LoginScreen() {
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
-    </SafeAreaView>
+    </Screen>
   );
 }
 

@@ -6,7 +6,6 @@ import {
   RefreshControl,
   Text,
   TouchableOpacity,
-  Linking,
 } from "react-native";
 import { useLinkStore } from "@/store/linkStore";
 import LinkCard from "@/components/ui/LinkCard";
@@ -17,16 +16,18 @@ import { Link } from "@/types";
 import AddLinkButton from "@/components/ui/AddLinkButton";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { XCircle } from "lucide-react-native";
+import Screen from "@/components/ui/Screen";
+import SegmentedControl from "@/components/ui/SegmentedControl";
 
 export default function AllLinksScreen() {
-  const { colors, theme } = useTheme();
+  const { colors, spacing, radius, typography } = useTheme();
   const { links, fetchLinks } = useLinkStore();
   const [refreshing, setRefreshing] = useState(false);
   const [filteredLinks, setFilteredLinks] = useState<Link[]>([]);
-  const [activeTypeFilter, setActiveTypeFilter] = useState("all"); // Default type filter
+  const [activeTypeFilter, setActiveTypeFilter] = useState("all");
   const [activeReadStatusFilter, setActiveReadStatusFilter] = useState<
     "all" | "read" | "unread"
-  >("unread"); // Default to 'To Do'
+  >("unread");
   const params = useLocalSearchParams<{
     categoryId?: string;
     categoryName?: string;
@@ -48,32 +49,21 @@ export default function AllLinksScreen() {
         id: params.categoryId,
         name: params.categoryName,
       });
-      // Optionally, reset other filters when a category is directly selected
-      // setActiveTypeFilter('all');
-      // setActiveReadStatusFilter('all');
-    } else if (!params.categoryId) {
-      // If categoryId is removed from params (e.g. by navigating away and back), clear the filter
-      // This depends on how you want to persist the filter.
-      // For now, let's assume the filter is cleared if params are not present.
-      // setActiveCategoryFilter(null); // Or handle this through a clear button only
     }
   }, [params.categoryId, params.categoryName]);
 
   useEffect(() => {
     let tempLinks = links;
 
-    // Filter by category if active
     if (activeCategoryFilter) {
       tempLinks = tempLinks.filter((link) =>
         link.categoryIds?.includes(activeCategoryFilter.id!)
       );
     }
 
-    // Filter by type
     if (activeTypeFilter !== "all") {
       tempLinks = tempLinks.filter((link) => link.type === activeTypeFilter);
     }
-    // Filter by read status
     if (activeReadStatusFilter === "read") {
       tempLinks = tempLinks.filter((link) => link.is_read);
     } else if (activeReadStatusFilter === "unread") {
@@ -90,31 +80,33 @@ export default function AllLinksScreen() {
 
   const renderItem = ({ item }: { item: Link }) => <LinkCard link={item} />;
 
-    const typeFilterOptions = [
-    { id: "all", label: "All" },
+  const typeFilterOptions = [
+    { id: "all", label: "Todos" },
     { id: "link", label: "Links" },
-    { id: "video", label: "Videos" },
-    // { id: "image", label: "Images" },
+    { id: "video", label: "Vídeos" },
     { id: "music", label: "Música" },
     { id: "movie", label: "Filmes" },
-    { id: "other", label: "Notes" },
+    { id: "other", label: "Notas" },
   ];
 
   const readStatusFilterOptions = [
-    { id: "unread", label: "To Do" },
-    { id: "read", label: "Done" },
-    { id: "all", label: "All" },
+    { id: "unread", label: "A fazer" },
+    { id: "read", label: "Feitos" },
+    { id: "all", label: "Todos" },
   ];
 
   const clearCategoryFilter = () => {
     setActiveCategoryFilter(null);
-    // Navigate to the same screen without params to clear them from the URL
-    // This helps if the user navigates away and back, the filter won't re-apply from old params.
     router.replace("/");
   };
 
+  const hasActiveFilters =
+    !!activeCategoryFilter ||
+    activeTypeFilter !== "all" ||
+    activeReadStatusFilter !== "all";
+
   return (
-    <View style={[styles.container, { backgroundColor: colors.background }]}>
+    <Screen>
       <FilterBar
         options={typeFilterOptions}
         activeFilter={activeTypeFilter}
@@ -125,75 +117,45 @@ export default function AllLinksScreen() {
         <View
           style={[
             styles.activeCategoryFilterContainer,
-            { backgroundColor: colors.card, borderColor: colors.border },
+            {
+              backgroundColor: colors.card,
+              borderColor: colors.border,
+              borderRadius: radius.sm,
+              paddingHorizontal: spacing.md,
+              paddingVertical: spacing.sm,
+              marginHorizontal: spacing.md,
+              marginTop: spacing.sm,
+            },
           ]}
         >
           <Text
-            style={[styles.activeCategoryFilterText, { color: colors.text }]}
+            style={[
+              typography.caption,
+              { color: colors.text, flex: 1, marginRight: spacing.xs },
+            ]}
           >
-            Category: {activeCategoryFilter.name}
+            Categoria: {activeCategoryFilter.name}
           </Text>
-          <TouchableOpacity onPress={clearCategoryFilter}>
+          <TouchableOpacity onPress={clearCategoryFilter} accessibilityLabel="Limpar filtro de categoria">
             <XCircle size={20} color={colors.textSecondary} />
           </TouchableOpacity>
         </View>
       )}
 
-      <View
-        style={[
-          styles.segmentedControlContainer,
-          { borderColor: colors.primary },
-        ]}
-      >
-        {readStatusFilterOptions.map((option, index) => (
-          <TouchableOpacity
-            key={option.id}
-            style={[
-              styles.segmentButton,
-              {
-                backgroundColor:
-                  activeReadStatusFilter === option.id
-                    ? colors.primary
-                    : "transparent",
-              },
-              activeReadStatusFilter === option.id &&
-                {
-                  // No specific style for active other than background
-                },
-              index < readStatusFilterOptions.length - 1 && {
-                borderRightWidth: 1,
-                borderRightColor: colors.primary,
-              },
-            ]}
-            onPress={() =>
-              setActiveReadStatusFilter(option.id as "all" | "read" | "unread")
-            }
-          >
-            <Text
-              style={[
-                styles.segmentButtonText,
-                {
-                  color:
-                    activeReadStatusFilter === option.id
-                      ? theme === "dark"
-                        ? colors.background
-                        : "#FFFFFF"
-                      : colors.primary,
-                },
-              ]}
-            >
-              {option.label}
-            </Text>
-          </TouchableOpacity>
-        ))}
-      </View>
+      <SegmentedControl
+        options={readStatusFilterOptions}
+        value={activeReadStatusFilter}
+        onChange={(id) =>
+          setActiveReadStatusFilter(id as "all" | "read" | "unread")
+        }
+      />
 
       {filteredLinks.length > 0 ? (
         <FlatList
           data={filteredLinks}
           renderItem={renderItem}
           keyExtractor={(item) => item.id ?? ""}
-          contentContainerStyle={styles.listContent}
+          contentContainerStyle={{ padding: spacing.md, paddingBottom: 100 }}
           showsVerticalScrollIndicator={false}
           refreshControl={
             <RefreshControl
@@ -207,69 +169,29 @@ export default function AllLinksScreen() {
       ) : (
         <EmptyState
           title={
-            activeCategoryFilter ||
-            activeTypeFilter !== "all" ||
-            activeReadStatusFilter !== "all"
-              ? "No Savvys match your filters"
-              : "No saved Savvys yet"
+            hasActiveFilters
+              ? "Nenhum Savvy corresponde aos filtros"
+              : "Nenhum Savvy salvo ainda"
           }
           description={
-            activeCategoryFilter ||
-            activeTypeFilter !== "all" ||
-            activeReadStatusFilter !== "all"
-              ? "Try adjusting your type or status filters."
-              : "Save links, images, texts and more to see them here."
+            hasActiveFilters
+              ? "Tente ajustar os filtros de tipo ou status."
+              : "Salve links, imagens, textos e mais para vê-los aqui."
           }
           icon="BookmarkPlus"
         />
       )}
 
       <AddLinkButton />
-    </View>
+    </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  listContent: {
-    padding: 16,
-    paddingBottom: 100,
-  },
-  segmentedControlContainer: {
-    flexDirection: "row",
-    marginHorizontal: 16,
-    marginVertical: 12,
-    borderWidth: 1,
-    borderRadius: 8,
-    overflow: "hidden", // Ensures children adhere to border radius
-  },
-  segmentButton: {
-    flex: 1, // Each button takes equal width
-    alignItems: "center",
-    justifyContent: "center",
-    paddingVertical: 8,
-  },
-  segmentButtonText: {
-    fontFamily: "Inter-Medium",
-    fontSize: 12,
-  },
   activeCategoryFilterContainer: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    marginHorizontal: 16,
-    marginTop: 12,
-    borderRadius: 8,
     borderWidth: 1,
-  },
-  activeCategoryFilterText: {
-    fontFamily: "Inter-Medium",
-    fontSize: 12,
-    flex: 1,
-    marginRight: 8,
   },
 });

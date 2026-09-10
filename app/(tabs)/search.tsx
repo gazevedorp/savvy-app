@@ -19,11 +19,12 @@ import { MediaItem, MediaKind, mediaItemToLink, searchMedia } from '@/utils/itun
 import MediaSearchResultCard from '@/components/ui/MediaSearchResultCard';
 import { useRouter } from 'expo-router';
 import FilterBar from '@/components/ui/FilterBar';
+import Screen from '@/components/ui/Screen';
 
 type SearchScope = 'saved' | 'music' | 'movie';
 
 export default function SearchScreen() {
-  const { colors } = useTheme();
+  const { colors, spacing, radius, typography } = useTheme();
   const { links, addLink } = useLinkStore();
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState('');
@@ -147,11 +148,25 @@ export default function SearchScreen() {
     );
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <View style={[styles.searchContainer, { backgroundColor: colors.card, borderColor: colors.border }]}>
+    <Screen>
+      <View
+        style={[
+          styles.searchContainer,
+          {
+            backgroundColor: colors.card,
+            borderColor: colors.border,
+            borderRadius: radius.sm,
+            marginHorizontal: spacing.md,
+            marginTop: spacing.md,
+            marginBottom: spacing.xs,
+            paddingHorizontal: spacing.xs,
+            paddingVertical: spacing.xxs + 2,
+          },
+        ]}
+      >
         <SearchIcon size={20} color={colors.textSecondary} />
         <TextInput
-          style={[styles.searchInput, { color: colors.text }]}
+          style={[styles.searchInput, typography.label, { color: colors.text, fontFamily: 'Inter-Regular' }]}
           placeholder={placeholder}
           placeholderTextColor={colors.textSecondary}
           value={searchQuery}
@@ -184,7 +199,7 @@ export default function SearchScreen() {
             data={savedResults}
             renderItem={renderSaved}
             keyExtractor={(item) => item.id || item.url}
-            contentContainerStyle={styles.listContent}
+            contentContainerStyle={{ padding: spacing.md, paddingBottom: 100 }}
             showsVerticalScrollIndicator={false}
             keyboardShouldPersistTaps="handled"
           />
@@ -192,7 +207,7 @@ export default function SearchScreen() {
       ) : loading ? (
         <View style={styles.loadingBox}>
           <ActivityIndicator size="large" color={colors.primary} />
-          <Text style={[styles.loadingText, { color: colors.textSecondary }]}>
+          <Text style={[typography.caption, { marginTop: spacing.sm, color: colors.textSecondary }]}>
             Consultando catálogo público...
           </Text>
         </View>
@@ -219,50 +234,30 @@ export default function SearchScreen() {
             />
           )}
           keyExtractor={(item) => `${item.source}-${item.sourceId}-${item.title}`}
-          contentContainerStyle={styles.listContent}
+          contentContainerStyle={{ padding: spacing.md, paddingBottom: 100 }}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
         />
       )}
-    </View>
+    </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    paddingTop: 16,
-  },
   searchContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginHorizontal: 16,
-    marginBottom: 8,
-    paddingHorizontal: 8,
-    paddingVertical: 6,
-    borderRadius: 8,
     borderWidth: 1,
   },
   searchInput: {
     flex: 1,
     height: 36,
     marginLeft: 6,
-    fontFamily: 'Inter-Regular',
-    fontSize: 14,
-  },
-  listContent: {
-    padding: 16,
-    paddingBottom: 100,
   },
   loadingBox: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
     padding: 24,
-  },
-  loadingText: {
-    marginTop: 12,
-    fontFamily: 'Inter-Regular',
-    fontSize: 13,
   },
 });

@@ -1,26 +1,22 @@
 import React, { useEffect, useState } from "react";
 import {
-  View,
   StyleSheet,
   FlatList,
-  Text,
-  TouchableOpacity,
   useWindowDimensions,
 } from "react-native";
 import { useCategoryStore } from "@/store/categoryStore";
 import { useLinkStore } from "@/store/linkStore";
-import { useTheme } from "@/context/ThemeContext";
 import CategoryCard from "@/components/ui/CategoryCard";
 import EmptyState from "@/components/ui/EmptyState";
-import { Plus } from "lucide-react-native";
 import AddCategoryModal from "@/components/modals/AddCategoryModal";
+import Screen from "@/components/ui/Screen";
+import FAB from "@/components/ui/FAB";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Category } from "@/types";
 import DeleteCategoryOptionsModal from "@/components/modals/DeleteCategoryOptionsModal";
 import CategoryActionsModal from "@/components/modals/CategoryActionsModal"; // Import the new modal
 
 export default function CategoriesScreen() {
-  const { colors } = useTheme();
   const {
     categories,
     fetchCategories,
@@ -169,7 +165,7 @@ export default function CategoriesScreen() {
   );
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.background }]}>
+    <Screen>
       {categories.length > 0 ? (
         <FlatList
           data={categories}
@@ -177,7 +173,7 @@ export default function CategoriesScreen() {
           keyExtractor={(item) => item.id || `category-${Math.random()}`}
           contentContainerStyle={[
             styles.listContent,
-            { paddingBottom: insets.bottom + 100 }, // Ensure space for FAB and tab bar
+            { paddingBottom: insets.bottom + 100 },
           ]}
           numColumns={numColumns}
           columnWrapperStyle={styles.columnWrapper}
@@ -185,23 +181,13 @@ export default function CategoriesScreen() {
         />
       ) : (
         <EmptyState
-          title="No categories yet"
-          description="Create categories to organize your saved links."
-          icon="FolderPlus" // Make sure this icon exists in your EmptyState component
+          title="Nenhuma categoria ainda"
+          description="Crie categorias para organizar seus itens salvos."
+          icon="FolderPlus"
         />
       )}
 
-      <TouchableOpacity
-        style={[
-          styles.addButton,
-          {
-            backgroundColor: colors.primary,
-          },
-        ]}
-        onPress={handleOpenAddModal} // Corrected: Use the handler to open add/edit modal
-      >
-        <Plus size={24} color="#fff" />
-      </TouchableOpacity>
+      <FAB onPress={handleOpenAddModal} accessibilityLabel="Nova categoria" />
 
       {/* Modal for Adding or Editing a Category */}
       <AddCategoryModal
@@ -232,35 +218,17 @@ export default function CategoriesScreen() {
           onDelete={handleDeleteFromActionsModal}
         />
       )}
-    </View>
+    </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
   listContent: {
     padding: 16,
   },
   columnWrapper: {
-    justifyContent: "flex-start", // Or 'space-between' if you want space distributed
-    gap: 16, // Spacing between cards in a row
-    marginBottom: 16, // Spacing between rows
-  },
-  addButton: {
-    position: "absolute",
-    right: 20,
-    bottom: 24,
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    justifyContent: "center",
-    alignItems: "center",
-    elevation: 4, // Android shadow
-    shadowColor: "#000", // iOS shadow
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
+    justifyContent: "flex-start",
+    gap: 16,
+    marginBottom: 16,
   },
 });

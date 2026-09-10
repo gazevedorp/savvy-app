@@ -25,11 +25,11 @@ export default function Button({
   disabled = false,
   fullWidth = true,
 }: ButtonProps) {
-  const { colors } = useTheme();
+  const { colors, spacing, radius, typography } = useTheme();
 
   const getBackgroundColor = () => {
     if (disabled || loading) return colors.textSecondary + '40';
-    
+
     switch (variant) {
       case 'primary':
         return colors.primary;
@@ -44,16 +44,16 @@ export default function Button({
 
   const getTextColor = () => {
     if (disabled || loading) return colors.textSecondary;
-    
+
     switch (variant) {
       case 'primary':
-        return '#FFFFFF';
+        return colors.onPrimary;
       case 'secondary':
         return colors.text;
       case 'outline':
         return colors.primary;
       default:
-        return '#FFFFFF';
+        return colors.onPrimary;
     }
   };
 
@@ -72,6 +72,8 @@ export default function Button({
           backgroundColor: getBackgroundColor(),
           borderColor: getBorderColor(),
           width: fullWidth ? '100%' : 'auto',
+          borderRadius: radius.md,
+          padding: spacing.sm,
         },
         variant === 'outline' && styles.outlined,
       ]}
@@ -84,12 +86,12 @@ export default function Button({
           <ActivityIndicator
             size="small"
             color={getTextColor()}
-            style={styles.loader}
+            style={{ marginRight: spacing.xs }}
           />
         )}
         <Text
           style={[
-            styles.text,
+            typography.label,
             { color: getTextColor() },
             loading && styles.loadingText,
           ]}
@@ -103,8 +105,6 @@ export default function Button({
 
 const styles = StyleSheet.create({
   button: {
-    borderRadius: 12,
-    padding: 12,
     alignItems: 'center',
     justifyContent: 'center',
     minHeight: 44,
@@ -116,13 +116,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  text: {
-    fontFamily: 'Inter-Medium',
-    fontSize: 14,
-  },
-  loader: {
-    marginRight: 8,
   },
   loadingText: {
     opacity: 0.8,

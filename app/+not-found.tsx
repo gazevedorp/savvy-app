@@ -1,14 +1,17 @@
 import { Link, Stack } from 'expo-router';
 import { StyleSheet, Text, View } from 'react-native';
+import { useTheme } from '@/context/ThemeContext';
 
 export default function NotFoundScreen() {
+  const { colors, typography, spacing } = useTheme();
+
   return (
     <>
-      <Stack.Screen options={{ title: 'Oops!' }} />
-      <View style={styles.container}>
-        <Text style={styles.text}>This screen doesn't exist.</Text>
-        <Link href="/" style={styles.link}>
-          <Text>Go to home screen!</Text>
+      <Stack.Screen options={{ title: 'Página não encontrada' }} />
+      <View style={[styles.container, { backgroundColor: colors.background, padding: spacing.lg }]}>
+        <Text style={[typography.title, { color: colors.text }]}>Esta tela não existe.</Text>
+        <Link href="/" style={{ marginTop: spacing.md, paddingVertical: spacing.md }}>
+          <Text style={[typography.label, { color: colors.primary }]}>Voltar ao início</Text>
         </Link>
       </View>
     </>
@@ -20,14 +23,5 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    padding: 20,
-  },
-  text: {
-    fontSize: 20,
-    fontWeight: 600,
-  },
-  link: {
-    marginTop: 15,
-    paddingVertical: 15,
   },
 });

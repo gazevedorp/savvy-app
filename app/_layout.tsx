@@ -46,7 +46,7 @@ export default function RootLayout() {
                 <Stack.Screen name="auth" options={{ headerShown: false }} />
                 <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
                 <Stack.Screen name="share/index" options={{ presentation: 'modal' }} />
-                <Stack.Screen name="link/[id]" options={{ headerShown: false, title: 'Link Details' }} />
+                <Stack.Screen name="link/[id]" options={{ headerShown: false, title: 'Detalhes' }} />
                 <Stack.Screen name="+not-found" />
               </Stack>
             </AuthGuard>

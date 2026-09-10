@@ -14,11 +14,11 @@ import { useTheme } from "@/context/ThemeContext";
 import { useLinkStore } from "@/store/linkStore";
 import { useCategoryStore } from "@/store/categoryStore";
 import {
-  X,
   Link as LinkIcon,
   Check,
   Image as ImageIconLucide,
 } from "lucide-react-native";
+import AppHeader from "@/components/ui/AppHeader";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { Link, LinkType } from "@/types";
 import CategorySelector from "@/components/ui/CategorySelector";
@@ -157,7 +157,7 @@ export default function ShareScreen() {
     } catch (error) {
       console.error('Error uploading image:', error);
       const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
-      Alert.alert('Error', `Failed to upload image: ${errorMessage}`);
+      Alert.alert('Erro', `Falha ao enviar a imagem: ${errorMessage}`);
       return null;
     }
   };
@@ -239,7 +239,7 @@ export default function ShareScreen() {
     const permissionResult =
       await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (permissionResult.granted === false) {
-      alert("Permission to access camera roll is required!");
+      alert("É preciso permitir o acesso às fotos.");
       return;
     }
 
@@ -254,7 +254,7 @@ export default function ShareScreen() {
       const pickedUri = result.assets[0].uri;
       setUrl(pickedUri); // Store the local URI in the 'url' field for images
       setImageUri(pickedUri);
-      setTitle((prevTitle) => prevTitle || "My Image"); // Default title for picked image
+      setTitle((prevTitle) => prevTitle || "Minha imagem");
       setDescription(""); // Clear description for new image
       setIsMetadataFetched(true); // Local image, no further metadata fetching
     }
@@ -263,20 +263,20 @@ export default function ShareScreen() {
   const handleSave = async () => {
     if (isLoading) return;
     if (selectedType === "other" && !title.trim()) {
-      Alert.alert("Error", "Please enter a title for the note.");
+      Alert.alert("Erro", "Informe um título para a nota.");
       return;
     }
     if (selectedType !== "other" && !url.trim()) {
       Alert.alert(
-        "Error",
+        "Erro",
         selectedType === "image"
-          ? "Please choose an image."
-          : "Please enter a URL."
+          ? "Escolha uma imagem."
+          : "Informe um URL."
       );
       return;
     }
     if (!title.trim() && selectedType !== "other") {
-      Alert.alert("Error", "Please enter a title.");
+      Alert.alert("Erro", "Informe um título.");
       return;
     }
 
@@ -300,11 +300,11 @@ export default function ShareScreen() {
 
       let savvyTitle = title.trim();
       if (!savvyTitle) {
-        if (selectedType === "image") savvyTitle = "Saved Image";
-        else if (selectedType === "other") savvyTitle = "Untitled Note";
+        if (selectedType === "image") savvyTitle = "Imagem salva";
+        else if (selectedType === "other") savvyTitle = "Nota sem título";
         else if (url)
-          savvyTitle = url; // Fallback to URL if title empty (for URL-based types)
-        else savvyTitle = "Untitled Link";
+          savvyTitle = url;
+        else savvyTitle = "Link sem título";
       }
 
       const newLink: Partial<Link> = {
@@ -323,7 +323,7 @@ export default function ShareScreen() {
       router.back();
     } catch (error) {
       console.error('Error saving link:', error);
-      Alert.alert('Error', 'Failed to save. Please try again.');
+      Alert.alert('Erro', 'Não foi possível salvar. Tente novamente.');
     } finally {
       setIsLoading(false);
     }
@@ -399,28 +399,27 @@ export default function ShareScreen() {
       style={[styles.container, { backgroundColor: colors.background }]}
       entering={FadeIn.duration(300)}
     >
-      <View style={[styles.header, { borderBottomColor: colors.border }]}>
-        <TouchableOpacity onPress={handleCancel} style={styles.headerButton}>
-          <X size={24} color={colors.text} />
-        </TouchableOpacity>
-        <Text style={[styles.headerTitle, { color: colors.text }]}>
-          New Savvy
-        </Text>
-        <TouchableOpacity
-          onPress={handleSave}
-          style={styles.headerButton}
-          disabled={!canSave()}
-        >
-          <Check
-            size={24}
-            color={canSave() ? colors.primary : colors.textSecondary}
-          />
-        </TouchableOpacity>
-      </View>
+      <AppHeader
+        title="Novo Savvy"
+        onBack={handleCancel}
+        backIcon="close"
+        right={
+          <TouchableOpacity
+            onPress={handleSave}
+            disabled={!canSave()}
+            accessibilityLabel="Salvar"
+          >
+            <Check
+              size={24}
+              color={canSave() ? colors.primary : colors.textSecondary}
+            />
+          </TouchableOpacity>
+        }
+      />
 
       <ScrollView contentContainerStyle={styles.content}>
         <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>
-          Type
+          Tipo
         </Text>
         <TypeSelector selectedType={selectedType} onSelectType={onTypeSelect} />
 
@@ -441,7 +440,7 @@ export default function ShareScreen() {
               <Text
                 style={[styles.pickImageButtonText, { color: colors.primary }]}
               >
-                {imageUri ? "Change Image" : "Choose Image from Device"}
+                {imageUri ? "Trocar imagem" : "Escolher imagem do dispositivo"}
               </Text>
             </TouchableOpacity>
             {imageUri && (
@@ -487,8 +486,8 @@ export default function ShareScreen() {
               style={[styles.input, { color: colors.text }]}
               placeholder={
                 selectedType === "video"
-                  ? "Video URL"
-                  : "https://example.com"
+                  ? "URL do vídeo"
+                  : "https://exemplo.com"
               }
               placeholderTextColor={colors.textSecondary}
               value={url}
@@ -511,7 +510,7 @@ export default function ShareScreen() {
         >
           <TextInput
             style={[styles.input, { color: colors.text }]}
-            placeholder="Title"
+            placeholder="Título"
             placeholderTextColor={colors.textSecondary}
             value={title}
             onChangeText={setTitle}
@@ -528,8 +527,8 @@ export default function ShareScreen() {
             style={[styles.textArea, { color: colors.text }]}
             placeholder={
               selectedType === "other"
-                ? "Start writing your note..."
-                : "Description (optional)"
+                ? "Comece a escrever sua nota..."
+                : "Descrição (opcional)"
             }
             placeholderTextColor={colors.textSecondary}
             value={description}
@@ -541,7 +540,7 @@ export default function ShareScreen() {
         </View>
 
         <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>
-          Categories
+          Categorias
         </Text>
         <CategorySelector
           categories={categories}

@@ -18,25 +18,25 @@ interface CategoryState {
 const DEFAULT_CATEGORIES: Omit<Category, 'user_id'>[] = [
   {
     id: "cat-1",
-    name: "Articles",
-    color: "#0A84FF",
+    name: "Artigos",
+    color: "#0F6E6A",
     created_at: new Date().toISOString(),
   },
   {
     id: "cat-2",
-    name: "Technology",
+    name: "Tecnologia",
     color: "#FF2D55",
     created_at: new Date().toISOString(),
   },
   {
     id: "cat-3",
-    name: "Tutorials",
+    name: "Tutoriais",
     color: "#5856D6",
     created_at: new Date().toISOString(),
   },
   {
     id: "cat-4",
-    name: "Business",
+    name: "Negócios",
     color: "#FF9500",
     created_at: new Date().toISOString(),
   },
@@ -115,8 +115,8 @@ export const useCategoryStore = create<CategoryState>((set, get) => ({
 
       // Remove id since Supabase will auto-generate
       const newCategory = {
-        name: categoryData.name || "New Category",
-        color: categoryData.color || "#0A84FF",
+        name: categoryData.name || "Nova categoria",
+        color: categoryData.color || "#0F6E6A",
         icon: categoryData.icon,
         user_id: session.session.user.id,
       };

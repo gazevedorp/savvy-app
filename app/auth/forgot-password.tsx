@@ -8,14 +8,14 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useTheme } from '@/context/ThemeContext';
 import { useAuth } from '@/context/AuthContext';
-import { ArrowLeft } from 'lucide-react-native';
 import Logo from '@/components/ui/Logo';
 import InputField from '@/components/ui/InputField';
 import Button from '@/components/ui/Button';
+import Screen from '@/components/ui/Screen';
+import AppHeader from '@/components/ui/AppHeader';
 
 export default function ForgotPasswordScreen() {
   const { colors } = useTheme();
@@ -70,7 +70,7 @@ export default function ForgotPasswordScreen() {
 
   if (emailSent) {
     return (
-      <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+      <Screen safe>
         <View style={styles.content}>
           <View style={styles.logoContainer}>
             <Logo size="large" />
@@ -99,24 +99,17 @@ export default function ForgotPasswordScreen() {
             </TouchableOpacity>
           </View>
         </View>
-      </SafeAreaView>
+      </Screen>
     );
   }
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+    <Screen safe>
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.keyboardView}
       >
-        <View style={styles.header}>
-          <TouchableOpacity
-            style={styles.backButton}
-            onPress={() => router.back()}
-          >
-            <ArrowLeft size={24} color={colors.text} />
-          </TouchableOpacity>
-        </View>
+        <AppHeader title="Recuperar senha" onBack={() => router.back()} insetTop={false} />
 
         <View style={styles.content}>
           <View style={styles.logoContainer}>
@@ -156,7 +149,7 @@ export default function ForgotPasswordScreen() {
           </View>
         </View>
       </KeyboardAvoidingView>
-    </SafeAreaView>
+    </Screen>
   );
 }
 

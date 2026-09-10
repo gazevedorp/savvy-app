@@ -23,7 +23,7 @@ export default function ConfirmationModal({
   onCancel,
   confirmButtonColor,
 }: ConfirmationModalProps) {
-  const { colors } = useTheme();
+  const { colors, spacing, radius, typography, elevation } = useTheme();
 
   return (
     <Modal
@@ -33,12 +33,22 @@ export default function ConfirmationModal({
       onRequestClose={onCancel}
     >
       <View style={styles.centeredView}>
-        <View style={[styles.modalView, { backgroundColor: colors.card }]}>
-          <Text style={[styles.title, { color: colors.text }]}>
+        <View
+          style={[
+            styles.modalView,
+            {
+              backgroundColor: colors.card,
+              borderRadius: radius.lg,
+              padding: spacing.xl,
+            },
+            elevation.md,
+          ]}
+        >
+          <Text style={[typography.heading, styles.title, { color: colors.text }]}>
             {title}
           </Text>
           
-          <Text style={[styles.message, { color: colors.textSecondary }]}>
+          <Text style={[typography.label, styles.message, { color: colors.textSecondary, fontFamily: 'Inter-Regular' }]}>
             {message}
           </Text>
           

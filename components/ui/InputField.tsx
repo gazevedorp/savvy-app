@@ -26,24 +26,28 @@ export default function InputField({
   onChangeText,
   ...props
 }: InputFieldProps) {
-  const { colors } = useTheme();
+  const { colors, spacing, radius, typography } = useTheme();
   const [showPassword, setShowPassword] = useState(false);
 
   return (
-    <View style={styles.container}>
-      <Text style={[styles.label, { color: colors.text }]}>
+    <View style={{ marginBottom: spacing.lg }}>
+      <Text style={[typography.caption, { color: colors.text, marginBottom: spacing.xxs + 2 }]}>
         {label}
-        {required && <Text style={[styles.required, { color: colors.error }]}> *</Text>}
+        {required && <Text style={{ color: colors.error }}> *</Text>}
       </Text>
-      
-      <View style={styles.inputContainer}>
+
+      <View>
         <TextInput
           style={[
             styles.input,
+            typography.label,
             {
               backgroundColor: colors.card,
               borderColor: error ? colors.error : colors.border,
               color: colors.text,
+              borderRadius: radius.md,
+              padding: spacing.sm,
+              fontFamily: 'Inter-Regular',
             },
             isPassword && styles.passwordInput,
           ]}
@@ -53,10 +57,10 @@ export default function InputField({
           placeholderTextColor={colors.textSecondary}
           {...props}
         />
-        
+
         {isPassword && (
           <TouchableOpacity
-            style={styles.eyeButton}
+            style={[styles.eyeButton, { right: spacing.sm, top: spacing.sm }]}
             onPress={() => setShowPassword(!showPassword)}
           >
             {showPassword ? (
@@ -67,9 +71,9 @@ export default function InputField({
           </TouchableOpacity>
         )}
       </View>
-      
+
       {error && (
-        <Text style={[styles.error, { color: colors.error }]}>
+        <Text style={[typography.caption, { color: colors.error, marginTop: spacing.xxs }]}>
           {error}
         </Text>
       )}
@@ -78,39 +82,14 @@ export default function InputField({
 }
 
 const styles = StyleSheet.create({
-  container: {
-    marginBottom: 20,
-  },
-  label: {
-    fontFamily: 'Inter-Medium',
-    fontSize: 12,
-    marginBottom: 6,
-  },
-  required: {
-    fontFamily: 'Inter-Medium',
-  },
-  inputContainer: {
-    position: 'relative',
-  },
   input: {
     borderWidth: 1,
-    borderRadius: 12,
-    padding: 10,
-    fontFamily: 'Inter-Regular',
-    fontSize: 14,
   },
   passwordInput: {
     paddingRight: 40,
   },
   eyeButton: {
     position: 'absolute',
-    right: 12,
-    top: 12,
     padding: 4,
-  },
-  error: {
-    fontFamily: 'Inter-Regular',
-    fontSize: 12,
-    marginTop: 4,
   },
 });

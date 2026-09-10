@@ -3,7 +3,11 @@ import { View, StyleSheet, Text, ScrollView, TouchableOpacity, Linking, Share, I
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useLinkStore } from '@/store/linkStore';
 import { useTheme } from '@/context/ThemeContext';
-import { ArrowLeft, ExternalLink, Share2, Edit, Trash2, Check, Clock } from 'lucide-react-native';
+import { ExternalLink, Share2, Edit, Trash2, Check, Clock } from 'lucide-react-native';
+import Screen from '@/components/ui/Screen';
+import AppHeader from '@/components/ui/AppHeader';
+import Card from '@/components/ui/Card';
+import Chip from '@/components/ui/Chip';
 import { useCategoryStore } from '@/store/categoryStore';
 import { formatRelativeTime } from '@/utils/dateUtils';
 import WebView from '@/components/WebView';
@@ -16,7 +20,7 @@ export default function LinkDetailScreen() {
   const { id } = useLocalSearchParams();
   const { links, updateLink, deleteLink } = useLinkStore();
   const { categories } = useCategoryStore();
-  const { colors } = useTheme();
+  const { colors, spacing, typography } = useTheme();
   const router = useRouter();
   const [link, setLink] = useState<Link | null>(null);
   const [deleteModalVisible, setDeleteModalVisible] = useState(false);
@@ -88,9 +92,11 @@ export default function LinkDetailScreen() {
 
   if (!link) {
     return (
-      <View style={[styles.container, { backgroundColor: colors.background }]}>
-        <Text style={[styles.errorText, { color: colors.text }]}>Link not found</Text>
-      </View>
+      <Screen>
+        <Text style={[styles.errorText, typography.heading, { color: colors.text }]}>
+          Item não encontrado
+        </Text>
+      </Screen>
     );
   }
 
@@ -98,23 +104,19 @@ export default function LinkDetailScreen() {
   const isMedia = isMediaType(link.type);
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <View style={[styles.header, { backgroundColor: colors.background, borderBottomColor: colors.border }]}>
-        <TouchableOpacity onPress={handleBack} style={styles.backButton}>
-          <ArrowLeft size={24} color={colors.text} />
-        </TouchableOpacity>
-        <Text style={[styles.headerTitle, { color: colors.text }]} numberOfLines={1}>
-          {isMedia ? getTypeLabel(link.type) : link.title}
-        </Text>
-      </View>
+    <Screen>
+      <AppHeader
+        title={isMedia ? getTypeLabel(link.type) : link.title}
+        onBack={handleBack}
+      />
       
       <ScrollView style={styles.content}>
         {isMedia ? (
           <MediaDetailView link={link} categoryNames={getCategoryNames()} />
         ) : (
           <>
-        <View style={[styles.linkCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-          <Text style={[styles.title, { color: colors.text }]}>{link.title}</Text>
+        <Card style={{ marginBottom: spacing.md }}>
+          <Text style={[styles.title, typography.title, { color: colors.text }]}>{link.title}</Text>
           
           {!isLocalImage && link.url && (
             <Text 
@@ -133,26 +135,22 @@ export default function LinkDetailScreen() {
           )}
           
           <View style={styles.metaRow}>
-            <View style={[styles.typeTag, { backgroundColor: colors.primaryLight }]}>
-              <Text style={[styles.typeText, { color: colors.primary }]}>
-                {getTypeLabel(link.type)}
-              </Text>
-            </View>
+            <Chip label={getTypeLabel(link.type)} variant="tag" />
             
-            <Text style={[styles.dateText, { color: colors.textSecondary }]}>
-              Saved {formatRelativeTime(link.created_at)}
+            <Text style={[styles.dateText, typography.caption, { color: colors.textSecondary }]}>
+              Salvo {formatRelativeTime(link.created_at)}
             </Text>
           </View>
           
           <View style={styles.categoryRow}>
-            <Text style={[styles.categoryLabel, { color: colors.textSecondary }]}>
-              Categories:
+            <Text style={[styles.categoryLabel, typography.caption, { color: colors.textSecondary }]}>
+              Categorias:
             </Text>
-            <Text style={[styles.categoryText, { color: colors.text }]}>
+            <Text style={[styles.categoryText, typography.caption, { color: colors.text, fontFamily: 'Inter-Regular' }]}>
               {getCategoryNames()}
             </Text>
           </View>
-        </View>
+        </Card>
         
         {isLocalImage ? (
           <View style={[styles.imagePreviewContainer, { backgroundColor: colors.card, borderColor: colors.border }]}>
@@ -160,8 +158,8 @@ export default function LinkDetailScreen() {
           </View>
         ) : link.url ? ( // Only show WebView if there's a URL and it's not a local image
           <View style={[styles.previewContainer, { backgroundColor: colors.card, borderColor: colors.border }]}>
-            <Text style={[styles.previewTitle, { color: colors.textSecondary, borderBottomColor: colors.border }]}>
-              Preview
+            <Text style={[styles.previewTitle, typography.overline, { color: colors.textSecondary, borderBottomColor: colors.border }]}>
+              Prévia
             </Text>
             <WebView // Este é o seu componente customizado de @/components/WebView
               url={link.url}
@@ -221,15 +219,15 @@ export default function LinkDetailScreen() {
       
       <ConfirmationModal
         visible={deleteModalVisible}
-        title="Delete Link"
-        message="Are you sure you want to delete this link? This action cannot be undone."
-        confirmText="Delete"
-        cancelText="Cancel"
+        title="Excluir item"
+        message="Tem certeza de que deseja excluir este item? Esta ação não pode ser desfeita."
+        confirmText="Excluir"
+        cancelText="Cancelar"
         onConfirm={handleDeleteLink}
         onCancel={() => setDeleteModalVisible(false)}
         confirmButtonColor={colors.error}
       />
-    </View>
+    </Screen>
   );
 }
 
