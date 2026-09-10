@@ -1,7 +1,8 @@
 import React from 'react';
-import { View, StyleSheet, Text, ScrollView, TouchableOpacity } from 'react-native';
+import { View, StyleSheet, ScrollView } from 'react-native';
 import { useTheme } from '@/context/ThemeContext';
 import Animated, { FadeIn } from 'react-native-reanimated';
+import Chip from '@/components/ui/Chip';
 
 interface FilterOption {
   id: string;
@@ -15,42 +16,26 @@ interface FilterBarProps {
 }
 
 export default function FilterBar({ options, activeFilter, onFilterChange }: FilterBarProps) {
-  const { colors } = useTheme();
+  const { colors, spacing } = useTheme();
 
   return (
-    <Animated.View 
-      style={[styles.container, { borderBottomColor: colors.border }]}
+    <Animated.View
+      style={[styles.container, { borderBottomColor: colors.border, paddingVertical: spacing.sm }]}
       entering={FadeIn.duration(300)}
     >
-      <ScrollView 
+      <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={{ paddingHorizontal: spacing.md }}
       >
         {options.map((option) => (
-          <TouchableOpacity
+          <Chip
             key={option.id}
-            style={[
-              styles.filterOption,
-              activeFilter === option.id && { 
-                backgroundColor: colors.primaryLight,
-                borderColor: colors.primary,
-              },
-              activeFilter !== option.id && {
-                borderColor: colors.border,
-              }
-            ]}
+            label={option.label}
+            selected={activeFilter === option.id}
             onPress={() => onFilterChange(option.id)}
-          >
-            <Text
-              style={[
-                styles.filterText,
-                { color: activeFilter === option.id ? colors.primary : colors.textSecondary }
-              ]}
-            >
-              {option.label}
-            </Text>
-          </TouchableOpacity>
+            style={{ marginRight: spacing.xs }}
+          />
         ))}
       </ScrollView>
     </Animated.View>
@@ -59,21 +44,6 @@ export default function FilterBar({ options, activeFilter, onFilterChange }: Fil
 
 const styles = StyleSheet.create({
   container: {
-    paddingVertical: 12,
     borderBottomWidth: 1,
-  },
-  scrollContent: {
-    paddingHorizontal: 16,
-  },
-  filterOption: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 20,
-    marginRight: 8,
-    borderWidth: 1,
-  },
-  filterText: {
-    fontFamily: 'Inter-Medium',
-    fontSize: 12,
   },
 });

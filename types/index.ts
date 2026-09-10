@@ -69,6 +69,62 @@ export interface ThemeColors {
   success: string;
   error: string;
   warning: string;
+  onPrimary: string;
+  overlay: string;
+}
+
+export interface ThemeSpacing {
+  xxs: number;
+  xs: number;
+  sm: number;
+  md: number;
+  lg: number;
+  xl: number;
+  xxl: number;
+  xxxl: number;
+}
+
+export interface ThemeRadius {
+  sm: number;
+  md: number;
+  lg: number;
+  xl: number;
+  full: number;
+}
+
+export interface ThemeElevationLevel {
+  shadowColor: string;
+  shadowOffset: { width: number; height: number };
+  shadowOpacity: number;
+  shadowRadius: number;
+  elevation: number;
+}
+
+export interface ThemeElevation {
+  none: ThemeElevationLevel;
+  sm: ThemeElevationLevel;
+  md: ThemeElevationLevel;
+  lg: ThemeElevationLevel;
+}
+
+export interface ThemeTypeStyle {
+  fontFamily: string;
+  fontSize: number;
+  lineHeight: number;
+  letterSpacing?: number;
+  textTransform?: 'none' | 'uppercase' | 'lowercase' | 'capitalize';
+}
+
+export interface ThemeTypography {
+  hero: ThemeTypeStyle;
+  title: ThemeTypeStyle;
+  heading: ThemeTypeStyle;
+  subtitle: ThemeTypeStyle;
+  body: ThemeTypeStyle;
+  label: ThemeTypeStyle;
+  caption: ThemeTypeStyle;
+  overline: ThemeTypeStyle;
+  micro: ThemeTypeStyle;
 }
 
 // Auth Types

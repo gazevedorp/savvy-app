@@ -29,9 +29,9 @@ export default function DeleteCategoryOptionsModal({
     >
       <View style={styles.centeredView}>
         <View style={[styles.modalView, { backgroundColor: colors.card }]}>
-          <Text style={[styles.modalTitle, { color: colors.text }]}>Delete "{categoryName}"</Text>
+          <Text style={[styles.modalTitle, { color: colors.text }]}>Excluir “{categoryName}”</Text>
           <Text style={[styles.modalMessage, { color: colors.textSecondary }]}>
-            How would you like to delete this category?
+            Como você quer excluir esta categoria?
           </Text>
 
           <TouchableOpacity
@@ -41,10 +41,10 @@ export default function DeleteCategoryOptionsModal({
               onClose(); // Ensure modal closes after action
             }}
           >
-            <Text style={[styles.buttonText, { color: colors.background }]}>Delete Category Only</Text>
+            <Text style={[styles.buttonText, { color: colors.onPrimary }]}>Excluir só a categoria</Text>
           </TouchableOpacity>
           <Text style={[styles.optionDescription, { color: colors.textSecondary }]}>
-            Links in this category will not be deleted but will no longer be associated with "{categoryName}".
+            Os itens desta categoria não serão apagados, mas deixam de ficar associados a “{categoryName}”.
           </Text>
 
           <TouchableOpacity
@@ -54,10 +54,10 @@ export default function DeleteCategoryOptionsModal({
               onClose(); // Ensure modal closes after action
             }}
           >
-            <Text style={[styles.buttonText, { color: '#FFFFFF' }]}>Delete Category & All Its Links</Text>
+            <Text style={[styles.buttonText, { color: '#FFFFFF' }]}>Excluir categoria e todos os itens</Text>
           </TouchableOpacity>
            <Text style={[styles.optionDescription, { color: colors.textSecondary, marginBottom: 20 }]}>
-            This will permanently delete the category and all links currently associated with it.
+            Isso apaga permanentemente a categoria e todos os itens associados a ela.
           </Text>
 
 
@@ -65,7 +65,7 @@ export default function DeleteCategoryOptionsModal({
             style={[styles.button, styles.buttonCancel, { borderColor: colors.border }]}
             onPress={onClose}
           >
-            <Text style={[styles.buttonText, { color: colors.text }]}>Cancel</Text>
+            <Text style={[styles.buttonText, { color: colors.text }]}>Cancelar</Text>
           </TouchableOpacity>
         </View>
       </View>

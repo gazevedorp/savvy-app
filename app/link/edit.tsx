@@ -1,10 +1,12 @@
 import React, { useEffect, useState } from 'react';
-import { View, StyleSheet, Text, TextInput, ScrollView, TouchableOpacity, Platform, Image } from 'react-native';
+import { View, StyleSheet, Text, TextInput, ScrollView, TouchableOpacity, Image } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useLinkStore } from '@/store/linkStore';
 import { useCategoryStore } from '@/store/categoryStore';
 import { useTheme } from '@/context/ThemeContext';
-import { ArrowLeft, Check, Link as LinkIcon, Image as ImageIconLucide } from 'lucide-react-native';
+import { Check, Link as LinkIcon, Image as ImageIconLucide } from 'lucide-react-native';
+import Screen from '@/components/ui/Screen';
+import AppHeader from '@/components/ui/AppHeader';
 import { Link, LinkType } from '@/types';
 import CategorySelector from '@/components/ui/CategorySelector';
 import TypeSelector from '@/components/ui/TypeSelector';
@@ -44,7 +46,7 @@ export default function EditLinkScreen() {
   const handlePickImage = async () => {
     const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (permissionResult.granted === false) {
-      alert("Permission to access camera roll is required!");
+      alert('É preciso permitir o acesso às fotos.');
       return;
     }
 
@@ -65,23 +67,23 @@ export default function EditLinkScreen() {
   const handleSave = () => {
     if (id && typeof id === 'string') {
       if (selectedType === 'other' && !title.trim()) {
-        alert('Please enter a title for the text savvy.');
+        alert('Informe um título para a nota.');
         return;
       }
       if (selectedType !== 'other' && !url.trim()) {
-        alert(selectedType === 'image' ? 'Please choose an image or ensure a URL is present.' : 'Please enter a URL.');
+        alert(selectedType === 'image' ? 'Escolha uma imagem ou informe um URL.' : 'Informe um URL.');
         return;
       }
       if (!title.trim() && selectedType !== 'other') {
-          alert('Please enter a title.');
+          alert('Informe um título.');
           return;
       }
 
       let savvyTitle = title.trim();
       if (!savvyTitle) {
-        if (selectedType === 'image' && url.startsWith('file://')) savvyTitle = 'Edited Image';
+        if (selectedType === 'image' && url.startsWith('file://')) savvyTitle = 'Imagem editada';
         else if (selectedType !== 'other') savvyTitle = url;
-        else savvyTitle = 'Untitled Note';
+        else savvyTitle = 'Nota sem título';
       }
 
       const payload: Partial<Link> = {
@@ -135,27 +137,22 @@ export default function EditLinkScreen() {
   };
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <View style={[styles.header, { backgroundColor: colors.background, borderBottomColor: colors.border }]}>
-        <TouchableOpacity onPress={handleBack} style={styles.backButton}>
-          <ArrowLeft size={24} color={colors.text} />
-        </TouchableOpacity>
-        <Text style={[styles.headerTitle, { color: colors.text }]}>
-          Edit Link
-        </Text>
-        <TouchableOpacity 
-          onPress={handleSave} 
-          style={styles.saveButton}
-          disabled={!canSave()}>
-          <Check size={24} color={canSave() ? colors.primary : colors.textSecondary} />
-        </TouchableOpacity>
-      </View>
+    <Screen>
+      <AppHeader
+        title="Editar item"
+        onBack={handleBack}
+        right={
+          <TouchableOpacity onPress={handleSave} disabled={!canSave()} accessibilityLabel="Salvar">
+            <Check size={24} color={canSave() ? colors.primary : colors.textSecondary} />
+          </TouchableOpacity>
+        }
+      />
       
       <ScrollView style={styles.content}>
         <View style={[styles.inputContainer, { backgroundColor: colors.card, borderColor: colors.border }]}>
           <TextInput
             style={[styles.input, { color: colors.text }]}
-            placeholder="Title"
+            placeholder="Título"
             placeholderTextColor={colors.textSecondary}
             value={title}
             onChangeText={setTitle}
@@ -170,7 +167,7 @@ export default function EditLinkScreen() {
             >
               <ImageIconLucide size={20} color={colors.primary} style={styles.inputIcon} />
               <Text style={[styles.pickImageButtonText, { color: colors.primary }]}>
-                {imageUri || url.startsWith('file://') ? 'Change Image' : 'Choose Image from Device'}
+                {imageUri || url.startsWith('file://') ? 'Trocar imagem' : 'Escolher imagem do dispositivo'}
               </Text>
             </TouchableOpacity>
             {(imageUri || (selectedType === 'image' && url.startsWith('file://'))) && (
@@ -182,21 +179,21 @@ export default function EditLinkScreen() {
             {selectedType === 'image' && url && !url.startsWith('file://') && (
                  <View style={[styles.inputContainer, { backgroundColor: colors.card, borderColor: colors.border }]}>
                    <LinkIcon size={20} color={colors.textSecondary} style={styles.inputIcon} />
-                   <TextInput style={[styles.input, { color: colors.text }]} placeholder="Image URL" placeholderTextColor={colors.textSecondary} value={url} onChangeText={setUrl} autoCapitalize="none" autoCorrect={false} keyboardType="url"/>
+                   <TextInput style={[styles.input, { color: colors.text }]} placeholder="URL da imagem" placeholderTextColor={colors.textSecondary} value={url} onChangeText={setUrl} autoCapitalize="none" autoCorrect={false} keyboardType="url"/>
                  </View>
             )}
           </>
         ) : selectedType !== 'other' && (
           <View style={[styles.inputContainer, { backgroundColor: colors.card, borderColor: colors.border }]}>
             <LinkIcon size={20} color={colors.textSecondary} style={styles.inputIcon} />
-            <TextInput style={[styles.input, { color: colors.text }]} placeholder={selectedType === 'video' ? "Video URL" : selectedType === 'music' ? "Music URL" : selectedType === 'movie' ? "Movie URL" : "https://example.com"} placeholderTextColor={colors.textSecondary} value={url} onChangeText={setUrl} autoCapitalize="none" autoCorrect={false} keyboardType="url"/>
+            <TextInput style={[styles.input, { color: colors.text }]} placeholder={selectedType === 'video' ? "URL do vídeo" : selectedType === 'music' ? "URL da música" : selectedType === 'movie' ? "URL do filme" : "https://exemplo.com"} placeholderTextColor={colors.textSecondary} value={url} onChangeText={setUrl} autoCapitalize="none" autoCorrect={false} keyboardType="url"/>
           </View>
         )}
         
         <View style={[styles.textAreaContainer, { backgroundColor: colors.card, borderColor: colors.border }]}>
           <TextInput
             style={[styles.textArea, { color: colors.text }]}
-            placeholder={selectedType === 'other' ? "Your note content..." : "Description (optional)"}
+            placeholder={selectedType === 'other' ? "Escreva sua nota..." : "Descrição (opcional)"}
             placeholderTextColor={colors.textSecondary}
             value={description}
             onChangeText={setDescription}
@@ -206,13 +203,13 @@ export default function EditLinkScreen() {
           />
         </View>
         
-        <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>Type</Text>
+        <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>Tipo</Text>
         <TypeSelector 
           selectedType={selectedType}
           onSelectType={onTypeSelect}
         />
         
-        <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>Categories</Text>
+        <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>Categorias</Text>
         <CategorySelector
           categories={categories}
           selectedCategories={selectedCategories}
@@ -225,39 +222,11 @@ export default function EditLinkScreen() {
           }}
         />
       </ScrollView>
-    </View>
+    </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    paddingTop: Platform.OS === 'android' ? 16 : 0,
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 16,
-    borderBottomWidth: 1,
-  },
-  backButton: {
-    width: 40,
-    height: 40,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  headerTitle: {
-    fontFamily: 'Inter-Bold',
-    fontSize: 16,
-  },
-  saveButton: {
-    width: 40,
-    height: 40,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
   content: {
     padding: 16,
   },

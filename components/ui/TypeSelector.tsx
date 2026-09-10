@@ -10,7 +10,7 @@ interface TypeSelectorProps {
 }
 
 export default function TypeSelector({ selectedType, onSelectType }: TypeSelectorProps) {
-  const { colors } = useTheme();
+  const { colors, spacing, radius, typography } = useTheme();
 
   const types: { type: LinkType; label: string; icon: React.ReactNode; color: string }[] = [
     {
@@ -21,7 +21,7 @@ export default function TypeSelector({ selectedType, onSelectType }: TypeSelecto
     },
     {
       type: 'video',
-      label: 'Video',
+      label: 'Vídeo',
       icon: <Video size={20} color={selectedType === 'video' ? '#fff' : '#FF2D55'} />,
       color: '#FF2D55',
     },
@@ -45,7 +45,7 @@ export default function TypeSelector({ selectedType, onSelectType }: TypeSelecto
     },
     {
       type: 'other',
-      label: 'Note',
+      label: 'Nota',
       icon: <FileText size={20} color={selectedType === 'other' ? '#fff' : '#FF9500'} />,
       color: '#FF9500',
     },
@@ -61,6 +61,11 @@ export default function TypeSelector({ selectedType, onSelectType }: TypeSelecto
             {
               backgroundColor: selectedType === item.type ? item.color : colors.card,
               borderColor: item.color,
+              borderRadius: radius.lg,
+              paddingHorizontal: spacing.sm,
+              paddingVertical: spacing.xxs + 2,
+              marginRight: spacing.xs,
+              marginBottom: spacing.xs,
             }
           ]}
           onPress={() => onSelectType(item.type)}
@@ -70,7 +75,7 @@ export default function TypeSelector({ selectedType, onSelectType }: TypeSelecto
           </View>
           <Text
             style={[
-              styles.typeLabel,
+              typography.caption,
               { color: selectedType === item.type ? '#fff' : item.color }
             ]}
           >
@@ -91,18 +96,9 @@ const styles = StyleSheet.create({
   typeOption: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 16,
-    marginRight: 8,
-    marginBottom: 8,
     borderWidth: 1,
   },
   iconContainer: {
     marginRight: 6,
-  },
-  typeLabel: {
-    fontFamily: 'Inter-Medium',
-    fontSize: 12,
   },
 });

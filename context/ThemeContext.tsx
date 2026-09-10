@@ -1,42 +1,161 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useColorScheme } from 'react-native';
-import { ThemeColors, ThemeMode } from '@/types';
+import {
+  ThemeColors,
+  ThemeElevation,
+  ThemeMode,
+  ThemeRadius,
+  ThemeSpacing,
+  ThemeTypography,
+} from '@/types';
 import { loadFromStorage, saveToStorage } from '@/utils/storage';
 
-// Theme color palettes
-const lightColors: ThemeColors = {
-  primary: '#0A84FF',
-  primaryLight: '#E5F1FF',
-  secondary: '#8E8D8A',
-  accent: '#FF6B6B',
-  background: '#F9F9FB',
-  card: '#FFFFFF',
-  text: '#1C1C1E',
-  textSecondary: '#8A8A8E',
-  border: '#E5E5EA',
-  success: '#34C759',
-  error: '#FF3B30',
-  warning: '#FF9500',
+/**
+ * Savvy palette — warm paper + ink teal.
+ * Leaves the generic iOS system blue (#0A84FF) behind.
+ * Hierarchy matches MediaDetailView: hero, chips, bordered cards.
+ */
+export const lightColors: ThemeColors = {
+  primary: '#0F6E6A',
+  primaryLight: '#D9EFED',
+  secondary: '#7A746C',
+  accent: '#C45D26',
+  background: '#F5F2ED',
+  card: '#FFFCF7',
+  text: '#1A1916',
+  textSecondary: '#6F6A63',
+  border: '#E6E0D6',
+  success: '#2F8A56',
+  error: '#C43D3A',
+  warning: '#C98912',
+  onPrimary: '#FFFFFF',
+  overlay: 'rgba(26, 25, 22, 0.48)',
 };
 
-const darkColors: ThemeColors = {
-  primary: '#0A84FF',
-  primaryLight: '#1F375F',
-  secondary: '#8E8D8A',
-  accent: '#FF6B6B',
-  background: '#1C1C1E',
-  card: '#2C2C2E',
-  text: '#FFFFFF',
-  textSecondary: '#8A8A8E',
-  border: '#38383A',
-  success: '#30D158',
-  error: '#FF453A',
-  warning: '#FF9F0A',
+export const darkColors: ThemeColors = {
+  primary: '#3DAEA8',
+  primaryLight: '#1A3331',
+  secondary: '#A39C93',
+  accent: '#E07840',
+  background: '#141210',
+  card: '#221F1B',
+  text: '#F4F0EA',
+  textSecondary: '#A39C93',
+  border: '#3A342E',
+  success: '#4CAF70',
+  error: '#E85A54',
+  warning: '#E8A838',
+  onPrimary: '#0C1615',
+  overlay: 'rgba(0, 0, 0, 0.62)',
 };
 
-interface ThemeContextType {
+export const spacing: ThemeSpacing = {
+  xxs: 4,
+  xs: 8,
+  sm: 12,
+  md: 16,
+  lg: 20,
+  xl: 24,
+  xxl: 32,
+  xxxl: 48,
+};
+
+export const radius: ThemeRadius = {
+  sm: 8,
+  md: 12,
+  lg: 16,
+  xl: 20,
+  full: 999,
+};
+
+export const elevation: ThemeElevation = {
+  none: {
+    shadowColor: 'transparent',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0,
+    shadowRadius: 0,
+    elevation: 0,
+  },
+  sm: {
+    shadowColor: '#1A1916',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.08,
+    shadowRadius: 3,
+    elevation: 2,
+  },
+  md: {
+    shadowColor: '#1A1916',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.16,
+    shadowRadius: 6,
+    elevation: 4,
+  },
+  lg: {
+    shadowColor: '#1A1916',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.22,
+    shadowRadius: 10,
+    elevation: 8,
+  },
+};
+
+export const typography: ThemeTypography = {
+  hero: {
+    fontFamily: 'Inter-Bold',
+    fontSize: 26,
+    lineHeight: 32,
+  },
+  title: {
+    fontFamily: 'Inter-Bold',
+    fontSize: 18,
+    lineHeight: 24,
+  },
+  heading: {
+    fontFamily: 'Inter-Bold',
+    fontSize: 16,
+    lineHeight: 22,
+  },
+  subtitle: {
+    fontFamily: 'Inter-Medium',
+    fontSize: 15,
+    lineHeight: 20,
+  },
+  body: {
+    fontFamily: 'Inter-Regular',
+    fontSize: 15,
+    lineHeight: 24,
+  },
+  label: {
+    fontFamily: 'Inter-Medium',
+    fontSize: 14,
+    lineHeight: 20,
+  },
+  caption: {
+    fontFamily: 'Inter-Medium',
+    fontSize: 12,
+    lineHeight: 16,
+  },
+  overline: {
+    fontFamily: 'Inter-Medium',
+    fontSize: 12,
+    lineHeight: 16,
+    letterSpacing: 0.4,
+    textTransform: 'uppercase',
+  },
+  micro: {
+    fontFamily: 'Inter-Regular',
+    fontSize: 11,
+    lineHeight: 14,
+  },
+};
+
+export interface ThemeContextType {
   theme: ThemeMode;
   colors: ThemeColors;
+  spacing: ThemeSpacing;
+  radius: ThemeRadius;
+  elevation: ThemeElevation;
+  typography: ThemeTypography;
   toggleTheme: () => void;
   setTheme: (theme: ThemeMode) => void;
 }
@@ -44,6 +163,10 @@ interface ThemeContextType {
 const ThemeContext = createContext<ThemeContextType>({
   theme: 'light',
   colors: lightColors,
+  spacing,
+  radius,
+  elevation,
+  typography,
   toggleTheme: () => {},
   setTheme: () => {},
 });
@@ -53,7 +176,6 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const [theme, setThemeState] = useState<ThemeMode>('light');
   const [isLoaded, setIsLoaded] = useState(false);
 
-  // Load saved theme on initial render
   useEffect(() => {
     const loadTheme = async () => {
       try {
@@ -61,7 +183,6 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         if (savedTheme === 'light' || savedTheme === 'dark') {
           setThemeState(savedTheme);
         } else {
-          // Use system preference if no saved theme
           setThemeState(systemColorScheme === 'dark' ? 'dark' : 'light');
         }
       } catch (error) {
@@ -84,7 +205,6 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     saveToStorage('theme', newTheme);
   };
 
-  // Use appropriate color scheme based on theme
   const colors = theme === 'dark' ? darkColors : lightColors;
 
   if (!isLoaded) {
@@ -92,7 +212,9 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   }
 
   return (
-    <ThemeContext.Provider value={{ theme, colors, toggleTheme, setTheme }}>
+    <ThemeContext.Provider
+      value={{ theme, colors, spacing, radius, elevation, typography, toggleTheme, setTheme }}
+    >
       {children}
     </ThemeContext.Provider>
   );

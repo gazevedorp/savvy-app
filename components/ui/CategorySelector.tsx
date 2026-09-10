@@ -20,7 +20,7 @@ export default function CategorySelector({
   if (categories.length === 0) {
     return (
       <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
-        No categories available
+        Nenhuma categoria disponível
       </Text>
     );
   }

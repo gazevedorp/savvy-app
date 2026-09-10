@@ -15,28 +15,28 @@ export default function AddCategoryModal({ visible, onClose, onSave, categoryToE
   const { colors } = useTheme();
   
   const [name, setName] = useState('');
-  const [selectedColor, setSelectedColor] = useState('#0A84FF');
+  const [selectedColor, setSelectedColor] = useState('#0F6E6A');
   const [isEditing, setIsEditing] = useState(false);
   
   const colorOptions = [
-    '#0A84FF', // Blue
-    '#FF2D55', // Red
+    '#0F6E6A', // Savvy teal
+    '#C45D26', // Copper
+    '#FF2D55', // Pink
     '#5856D6', // Purple
     '#34C759', // Green
     '#FF9500', // Orange
-    '#FF6B6B', // Coral
-    '#5AC8FA', // Light Blue
+    '#C9A227', // Gold
     '#AF52DE', // Magenta
   ];
 
   useEffect(() => {
     if (categoryToEdit) {
       setName(categoryToEdit.name);
-      setSelectedColor(categoryToEdit.color || '#0A84FF');
+      setSelectedColor(categoryToEdit.color || '#0F6E6A');
       setIsEditing(true);
     } else {
       setName('');
-      setSelectedColor('#0A84FF'); // Reset to default for new category
+      setSelectedColor('#0F6E6A');
       setIsEditing(false);
     }
   }, [categoryToEdit, visible]); // Re-run when categoryToEdit changes or modal becomes visible
@@ -71,7 +71,7 @@ export default function AddCategoryModal({ visible, onClose, onSave, categoryToE
               <X size={24} color={colors.text} />
             </TouchableOpacity>
             <Text style={[styles.title, { color: colors.text }]}>
-              {isEditing ? 'Edit Category' : 'New Category'}
+              {isEditing ? 'Editar categoria' : 'Nova categoria'}
             </Text>
             <TouchableOpacity 
               onPress={handleSave} 
@@ -85,7 +85,7 @@ export default function AddCategoryModal({ visible, onClose, onSave, categoryToE
           <View style={[styles.inputContainer, { borderColor: colors.border }]}>
             <TextInput
               style={[styles.input, { color: colors.text }]}
-              placeholder="Category name"
+              placeholder="Nome da categoria"
               placeholderTextColor={colors.textSecondary}
               value={name}
               onChangeText={setName}
@@ -94,7 +94,7 @@ export default function AddCategoryModal({ visible, onClose, onSave, categoryToE
           </View>
           
           <Text style={[styles.colorLabel, { color: colors.textSecondary }]}>
-            Choose a color
+            Escolha uma cor
           </Text>
           
           <View style={styles.colorGrid}>

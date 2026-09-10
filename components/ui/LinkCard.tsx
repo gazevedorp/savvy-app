@@ -22,7 +22,7 @@ interface LinkCardProps {
 }
 
 export default function LinkCard({ link }: LinkCardProps) {
-  const { colors } = useTheme();
+  const { colors, spacing, radius, typography } = useTheme();
   const router = useRouter();
   const { updateLink } = useLinkStore();
 
@@ -52,7 +52,7 @@ export default function LinkCard({ link }: LinkCardProps) {
   const subtitle = isMedia
     ? [link.metadata?.artistName, link.metadata?.releaseYear].filter(Boolean).join(" · ")
     : isLocalImage
-      ? "Image from device"
+      ? "Imagem do dispositivo"
       : link.url;
 
   return (
@@ -63,6 +63,9 @@ export default function LinkCard({ link }: LinkCardProps) {
           {
             backgroundColor: colors.card,
             borderColor: colors.border,
+            borderRadius: radius.md,
+            padding: spacing.md,
+            marginBottom: spacing.md,
             opacity: link.is_read ? 0.8 : 1,
           },
         ]}
@@ -81,7 +84,9 @@ export default function LinkCard({ link }: LinkCardProps) {
             <Text
               style={[
                 styles.title,
+                typography.label,
                 {
+                  fontFamily: "Inter-Bold",
                   color: colors.text,
                   textDecorationLine: link.is_read ? "line-through" : "none",
                 },
@@ -93,7 +98,7 @@ export default function LinkCard({ link }: LinkCardProps) {
           </View>
 
           <Text
-            style={[styles.url, { color: colors.textSecondary }]}
+            style={[styles.url, typography.micro, { color: colors.textSecondary }]}
             numberOfLines={1}
           >
             {subtitle}
@@ -103,7 +108,7 @@ export default function LinkCard({ link }: LinkCardProps) {
             <View
               style={[
                 styles.typeTag,
-                { backgroundColor: typeColor + "20" },
+                { backgroundColor: typeColor + "20", borderRadius: radius.lg },
               ]}
             >
               <Text style={[styles.typeText, { color: typeColor }]}>
@@ -111,7 +116,7 @@ export default function LinkCard({ link }: LinkCardProps) {
               </Text>
             </View>
 
-            <Text style={[styles.time, { color: colors.textSecondary }]}>
+            <Text style={[styles.time, typography.micro, { color: colors.textSecondary }]}>
               {formatRelativeTime(link.created_at)}
             </Text>
           </View>
@@ -145,9 +150,6 @@ export default function LinkCard({ link }: LinkCardProps) {
 
 const styles = StyleSheet.create({
   container: {
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 16,
     flexDirection: "row",
     borderWidth: 1,
   },
@@ -173,14 +175,10 @@ const styles = StyleSheet.create({
     alignItems: "flex-start",
   },
   title: {
-    fontFamily: "Inter-Bold",
-    fontSize: 14,
     marginBottom: 4,
     flex: 1,
   },
   url: {
-    fontFamily: "Inter-Regular",
-    fontSize: 11,
     marginBottom: 8,
   },
   description: {

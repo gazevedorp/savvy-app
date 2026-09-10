@@ -6,9 +6,9 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import DataLoader from '@/components/DataLoader';
 
 export default function TabLayout() {
-  const { theme, colors } = useTheme();
+  const { colors, typography, spacing } = useTheme();
   const insets = useSafeAreaInsets();
-  
+
   return (
     <DataLoader>
       <Tabs
@@ -20,25 +20,27 @@ export default function TabLayout() {
             borderTopColor: colors.border,
             height: Platform.OS === 'ios' ? 88 : 60 + insets.bottom,
             paddingBottom: Platform.OS === 'ios' ? 28 : insets.bottom,
-            paddingTop: 8,
+            paddingTop: spacing.xs,
           },
           tabBarLabelStyle: {
-            fontFamily: 'Inter-Medium',
-            fontSize: 12,
+            fontFamily: typography.caption.fontFamily,
+            fontSize: typography.caption.fontSize,
           },
           headerStyle: {
             backgroundColor: colors.background,
           },
+          headerShadowVisible: false,
           headerTitleStyle: {
-            fontFamily: 'Inter-Bold',
+            fontFamily: typography.heading.fontFamily,
+            fontSize: typography.heading.fontSize,
             color: colors.text,
           },
         }}>
         <Tabs.Screen
           name="index"
           options={{
-            title: "SAVVY READ LATER",
-            tabBarLabel: 'Links',
+            title: 'Salvos',
+            tabBarLabel: 'Salvos',
             tabBarIcon: ({ color, size }) => (
               <Bookmark size={size} color={color} />
             ),
@@ -48,7 +50,8 @@ export default function TabLayout() {
         <Tabs.Screen
           name="categories"
           options={{
-            title: 'Categories',
+            title: 'Categorias',
+            tabBarLabel: 'Categorias',
             tabBarIcon: ({ color, size }) => (
               <Grid3X3 size={size} color={color} />
             ),
@@ -58,7 +61,8 @@ export default function TabLayout() {
         <Tabs.Screen
           name="search"
           options={{
-            title: 'Search',
+            title: 'Buscar',
+            tabBarLabel: 'Buscar',
             tabBarIcon: ({ color, size }) => (
               <Search size={size} color={color} />
             ),
@@ -68,7 +72,8 @@ export default function TabLayout() {
         <Tabs.Screen
           name="settings"
           options={{
-            title: 'Settings',
+            title: 'Ajustes',
+            tabBarLabel: 'Ajustes',
             tabBarIcon: ({ color, size }) => (
               <Settings size={size} color={color} />
             ),

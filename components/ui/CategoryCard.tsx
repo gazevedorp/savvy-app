@@ -14,7 +14,7 @@ interface CategoryCardProps {
 }
 
 export default function CategoryCard({ category, linkCount, width, onLongPress }: CategoryCardProps) {
-  const { colors } = useTheme();
+  const { colors, spacing, radius, typography } = useTheme();
   const router = useRouter();
 
   const getContrastColor = (hexColor: string): string => {
@@ -39,8 +39,10 @@ export default function CategoryCard({ category, linkCount, width, onLongPress }
         style={[
           styles.container,
           { 
-            backgroundColor: category.color || colors.primary, // Fallback for category.color
+            backgroundColor: category.color || colors.primary,
             width: width,
+            borderRadius: radius.md,
+            padding: spacing.sm,
           }
         ]}
         onPress={handleCardPress}
@@ -49,12 +51,12 @@ export default function CategoryCard({ category, linkCount, width, onLongPress }
         delayLongPress={300} // Standard delay for long press
       >
         <View style={styles.content}>
-          <Text style={[styles.name, { color: textColor }]} numberOfLines={2}>
+          <Text style={[styles.name, typography.label, { fontFamily: 'Inter-Bold', color: textColor }]} numberOfLines={2}>
             {category.name}
           </Text>
           
-          <Text style={[styles.count, { color: textColor + 'B3' }]}> {/* Slightly more opaque for better readability */}
-            {linkCount} {linkCount === 1 ? 'link' : 'links'}
+          <Text style={[styles.count, typography.caption, { color: textColor + 'B3' }]}>
+            {linkCount} {linkCount === 1 ? 'item' : 'itens'}
           </Text>
         </View>
         {/* Action icons are removed */}
@@ -65,8 +67,6 @@ export default function CategoryCard({ category, linkCount, width, onLongPress }
 
 const styles = StyleSheet.create({
   container: {
-    borderRadius: 12,
-    padding: 12,
     height: 90,
   },
   content: {

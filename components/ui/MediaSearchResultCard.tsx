@@ -16,7 +16,7 @@ export default function MediaSearchResultCard({
   onPress,
   saving = false,
 }: MediaSearchResultCardProps) {
-  const { colors } = useTheme();
+  const { colors, spacing, radius, typography } = useTheme();
   const typeColor = getTypeColor(item.kind, colors.primary);
   const isMovie = item.kind === 'movie';
   const meta = [item.subtitle, item.releaseYear, item.collectionName]
@@ -25,7 +25,16 @@ export default function MediaSearchResultCard({
 
   return (
     <TouchableOpacity
-      style={[styles.container, { backgroundColor: colors.card, borderColor: colors.border }]}
+      style={[
+        styles.container,
+        {
+          backgroundColor: colors.card,
+          borderColor: colors.border,
+          borderRadius: radius.md,
+          padding: spacing.sm,
+          marginBottom: spacing.sm,
+        },
+      ]}
       onPress={() => onPress(item)}
       activeOpacity={0.8}
       disabled={saving}
@@ -46,15 +55,15 @@ export default function MediaSearchResultCard({
       )}
 
       <View style={styles.content}>
-        <Text style={[styles.title, { color: colors.text }]} numberOfLines={2}>
+        <Text style={[styles.title, typography.label, { fontFamily: 'Inter-Bold', color: colors.text }]} numberOfLines={2}>
           {item.title}
         </Text>
         {meta ? (
-          <Text style={[styles.meta, { color: colors.textSecondary }]} numberOfLines={2}>
+          <Text style={[styles.meta, typography.caption, { fontFamily: 'Inter-Regular', color: colors.textSecondary }]} numberOfLines={2}>
             {meta}
           </Text>
         ) : null}
-        <View style={[styles.typeTag, { backgroundColor: typeColor + '20' }]}>
+        <View style={[styles.typeTag, { backgroundColor: typeColor + '20', borderRadius: radius.lg }]}>
           <Text style={[styles.typeText, { color: typeColor }]}>
             {item.itunesKind === 'collection' ? 'Álbum' : getTypeLabel(item.kind)}
           </Text>
@@ -72,10 +81,7 @@ const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
     alignItems: 'center',
-    borderRadius: 12,
     borderWidth: 1,
-    padding: 10,
-    marginBottom: 12,
   },
   artwork: {
     borderRadius: 8,

@@ -1,45 +1,45 @@
-// Format a date string to relative time (e.g., "2 hours ago", "3 days ago")
 export const formatRelativeTime = (dateString: string | undefined): string => {
   if (!dateString) {
-    return 'Unknown time';
+    return 'Data desconhecida';
   }
-  
+
   const date = new Date(dateString);
-  
-  // Check if date is valid
+
   if (isNaN(date.getTime())) {
-    return 'Invalid date';
+    return 'Data inválida';
   }
-  
+
   const now = new Date();
-  
+
   const seconds = Math.floor((now.getTime() - date.getTime()) / 1000);
   const minutes = Math.floor(seconds / 60);
   const hours = Math.floor(minutes / 60);
   const days = Math.floor(hours / 24);
   const months = Math.floor(days / 30);
   const years = Math.floor(months / 12);
-  
+
   if (years > 0) {
-    return years === 1 ? '1 year ago' : `${years} years ago`;
-  } else if (months > 0) {
-    return months === 1 ? '1 month ago' : `${months} months ago`;
-  } else if (days > 0) {
-    return days === 1 ? '1 day ago' : `${days} days ago`;
-  } else if (hours > 0) {
-    return hours === 1 ? '1 hour ago' : `${hours} hours ago`;
-  } else if (minutes > 0) {
-    return minutes === 1 ? '1 minute ago' : `${minutes} minutes ago`;
-  } else {
-    return seconds <= 5 ? 'just now' : `${seconds} seconds ago`;
+    return years === 1 ? 'há 1 ano' : `há ${years} anos`;
   }
+  if (months > 0) {
+    return months === 1 ? 'há 1 mês' : `há ${months} meses`;
+  }
+  if (days > 0) {
+    return days === 1 ? 'há 1 dia' : `há ${days} dias`;
+  }
+  if (hours > 0) {
+    return hours === 1 ? 'há 1 hora' : `há ${hours} horas`;
+  }
+  if (minutes > 0) {
+    return minutes === 1 ? 'há 1 minuto' : `há ${minutes} minutos`;
+  }
+  return seconds <= 5 ? 'agora' : `há ${seconds} segundos`;
 };
 
-// Format a date to a readable string (e.g., "May 15, 2023")
 export const formatDate = (dateString: string): string => {
   const date = new Date(dateString);
-  
-  return date.toLocaleDateString('en-US', {
+
+  return date.toLocaleDateString('pt-BR', {
     month: 'short',
     day: 'numeric',
     year: 'numeric',
