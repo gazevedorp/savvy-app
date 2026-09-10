@@ -16,7 +16,7 @@ export default function TabLayout() {
           tabBarActiveTintColor: colors.primary,
           tabBarInactiveTintColor: colors.textSecondary,
           tabBarStyle: {
-            backgroundColor: colors.background,
+            backgroundColor: colors.card,
             borderTopColor: colors.border,
             height: Platform.OS === 'ios' ? 88 : 60 + insets.bottom,
             paddingBottom: Platform.OS === 'ios' ? 28 : insets.bottom,
@@ -44,7 +44,7 @@ export default function TabLayout() {
             tabBarIcon: ({ color, size }) => (
               <Bookmark size={size} color={color} />
             ),
-            headerShown: true,
+            headerShown: false,
           }}
         />
         <Tabs.Screen

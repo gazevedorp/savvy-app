@@ -189,6 +189,7 @@ export default function SearchScreen() {
         ]}
         activeFilter={scope}
         onFilterChange={(id) => setScope(id as SearchScope)}
+        bordered
       />
 
       {scope === 'saved' ? (

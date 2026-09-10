@@ -44,6 +44,37 @@ export function getTypeColor(type: LinkType | string | undefined, fallback: stri
   }
 }
 
+export function getLinkHostname(url?: string | null): string | undefined {
+  if (!url) return undefined;
+  if (url.startsWith('file://')) return undefined;
+  try {
+    return new URL(url).hostname.replace(/^www\./, '');
+  } catch {
+    return url;
+  }
+}
+
+export function getLinkSubtitle(link: Link): string {
+  if (isMediaType(link.type)) {
+    const media = [link.metadata?.artistName, link.metadata?.releaseYear]
+      .filter(Boolean)
+      .join(' · ');
+    if (media) return media;
+    if (link.description?.trim()) return link.description.trim();
+    return getLinkHostname(link.url) || '';
+  }
+
+  if (link.type === 'other') {
+    return link.description?.trim() || 'Nota';
+  }
+
+  if (link.type === 'image' && link.url?.startsWith('file://')) {
+    return 'Imagem do dispositivo';
+  }
+
+  return getLinkHostname(link.url) || link.description?.trim() || '';
+}
+
 export function upscaleArtwork(url?: string | null, size = 1000): string | undefined {
   if (!url) return undefined;
   return url

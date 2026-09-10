@@ -31,6 +31,7 @@ import MediaSearchPicker from "@/components/ui/MediaSearchPicker";
 import { MediaItem, mediaItemToLink } from "@/utils/itunes";
 import { isMediaType } from "@/utils/media";
 import { MediaMetadata } from "@/types";
+import { resolveCreateType } from "@/utils/home";
 
 export default function ShareScreen() {
   const { colors } = useTheme();
@@ -43,7 +44,9 @@ export default function ShareScreen() {
   const [url, setUrl] = useState("");
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
-  const [selectedType, setSelectedType] = useState<LinkType>("link");
+  const [selectedType, setSelectedType] = useState<LinkType>(
+    () => resolveCreateType(params.type as string | string[] | undefined) ?? "link"
+  );
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isMetadataFetched, setIsMetadataFetched] = useState(false);
@@ -166,6 +169,13 @@ export default function ShareScreen() {
     // Fetch categories when the screen mounts
     fetchCategoriesFromStore();
   }, [fetchCategoriesFromStore]);
+
+  useEffect(() => {
+    const initialType = resolveCreateType(params.type as string | string[] | undefined);
+    if (initialType) {
+      setSelectedType(initialType);
+    }
+  }, [params.type]);
 
   useEffect(() => {
     // Handle shared URL from other apps

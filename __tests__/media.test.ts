@@ -9,6 +9,7 @@ import { detectLinkType } from '@/utils/linkParser';
 import {
   buildMediaDescription,
   formatDuration,
+  getLinkSubtitle,
   getTypeLabel,
   isMediaType,
   mediaChips,
@@ -146,6 +147,19 @@ describe('media helpers', () => {
     expect(getTypeLabel('music')).toBe('Música');
     expect(getTypeLabel('movie')).toBe('Filme');
     expect(getTypeLabel('other')).toBe('Nota');
+    expect(
+      getLinkSubtitle({
+        url: 'https://www.imdb.com/title/tt0110912',
+        title: 'Pulp Fiction',
+        type: 'movie',
+        metadata: {
+          source: 'tmdb',
+          sourceId: '680',
+          artistName: 'Quentin Tarantino',
+          releaseYear: '1994',
+        },
+      })
+    ).toBe('Quentin Tarantino · 1994');
   });
 
   it('upscales iTunes artwork and formats metadata chips', () => {
