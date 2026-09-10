@@ -95,7 +95,8 @@ export default function AllLinksScreen() {
     { id: "link", label: "Links" },
     { id: "video", label: "Videos" },
     // { id: "image", label: "Images" },
-    { id: "music", label: "Music" },
+    { id: "music", label: "Música" },
+    { id: "movie", label: "Filmes" },
     { id: "other", label: "Notes" },
   ];
 

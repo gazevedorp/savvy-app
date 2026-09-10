@@ -44,6 +44,7 @@ CREATE TABLE links (
   description TEXT,
   thumbnail TEXT,
   type TEXT NOT NULL,
+  metadata JSONB DEFAULT NULL,
   user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
   is_read BOOLEAN DEFAULT FALSE,
   read_at TIMESTAMP WITH TIME ZONE,
@@ -143,6 +144,7 @@ CREATE TABLE links (
   description TEXT,
   thumbnail TEXT,
   type TEXT NOT NULL,
+  metadata JSONB DEFAULT NULL,
   user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
   is_read BOOLEAN DEFAULT FALSE,
   read_at TIMESTAMP WITH TIME ZONE,
@@ -192,8 +194,19 @@ CREATE POLICY "Users can delete own link_categories" ON link_categories
 ## Estrutura Final
 
 - **categories**: Categorias do usuário
-- **links**: Links do usuário 
+- **links**: Links do usuário (incluindo `metadata` JSONB para música/filme)
 - **link_categories**: Relacionamento N:N entre links e categorias
 - **RLS habilitado**: Cada usuário vê apenas seus próprios dados
 - **CASCADE DELETE**: Se usuário for deletado, todos os dados são removidos
 - **Relacionamento flexível**: Links podem ter 0, 1 ou múltiplas categorias
+
+## 5. Migração: metadados de mídia
+
+Se a tabela `links` já existe, execute:
+
+```sql
+ALTER TABLE links
+  ADD COLUMN IF NOT EXISTS metadata JSONB DEFAULT NULL;
+```
+
+O app continua funcionando sem essa coluna: título, descrição, thumbnail e URL já carregam o essencial, e o metadata extra é cacheado no AsyncStorage até a migração ser aplicada.

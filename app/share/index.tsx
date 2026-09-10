@@ -27,6 +27,10 @@ import { detectLinkType, extractMetadata } from "@/utils/linkParser";
 import Animated, { FadeIn } from "react-native-reanimated";
 import * as ImagePicker from "expo-image-picker";
 import { supabase } from "@/lib/supabase";
+import MediaSearchPicker from "@/components/ui/MediaSearchPicker";
+import { MediaItem, mediaItemToLink } from "@/utils/itunes";
+import { isMediaType } from "@/utils/media";
+import { MediaMetadata } from "@/types";
 
 export default function ShareScreen() {
   const { colors } = useTheme();
@@ -44,6 +48,8 @@ export default function ShareScreen() {
   const [isLoading, setIsLoading] = useState(false);
   const [isMetadataFetched, setIsMetadataFetched] = useState(false);
   const [imageUri, setImageUri] = useState<string | null>(null); // For image preview
+  const [mediaMetadata, setMediaMetadata] = useState<MediaMetadata | null>(null);
+  const [thumbnail, setThumbnail] = useState<string | undefined>(undefined);
 
   // Function to upload image to Supabase Storage
   const uploadImageToSupabase = async (uri: string): Promise<string | null> => {
@@ -199,6 +205,7 @@ export default function ShareScreen() {
         "video",
         "image",
         "music",
+        "movie",
       ];
       if (validTypes.includes(detectedType) && detectedType !== "image") {
         // Don't auto-switch to image from web URL detection
@@ -214,6 +221,11 @@ export default function ShareScreen() {
       const metadata = await extractMetadata(linkUrl);
       if (metadata.title) setTitle(metadata.title);
       if (metadata.description) setDescription(metadata.description);
+      if (metadata.thumbnail) setThumbnail(metadata.thumbnail);
+      if (metadata.metadata) setMediaMetadata(metadata.metadata);
+      if (metadata.type && (metadata.type === "music" || metadata.type === "movie")) {
+        setSelectedType(metadata.type);
+      }
 
       setIsMetadataFetched(true);
     } catch (error) {
@@ -232,7 +244,7 @@ export default function ShareScreen() {
     }
 
     const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      mediaTypes: ["images"],
       allowsEditing: true,
       // aspect: [4, 3], // Removido para permitir corte livre
       quality: 0.8,
@@ -272,14 +284,14 @@ export default function ShareScreen() {
 
     try {
       let finalUrl = url;
-      let thumbnail = null;
+      let finalThumbnail = thumbnail || null;
 
       // If it's an image type and we have a local URI, upload to Supabase
       if (selectedType === "image" && imageUri && imageUri.startsWith("file://")) {
         const uploadedUrl = await uploadImageToSupabase(imageUri);
         if (uploadedUrl) {
           finalUrl = uploadedUrl;
-          thumbnail = uploadedUrl; // Use the same URL as thumbnail
+          finalThumbnail = uploadedUrl;
         } else {
           setIsLoading(false);
           return; // Upload failed, don't proceed
@@ -299,11 +311,12 @@ export default function ShareScreen() {
         url: finalUrl,
         title: savvyTitle,
         description: description,
-        thumbnail: thumbnail || undefined,
+        thumbnail: finalThumbnail || undefined,
         type: selectedType,
         categoryIds: selectedCategories,
         created_at: new Date().toISOString(),
         is_read: false,
+        metadata: isMediaType(selectedType) ? mediaMetadata : null,
       };
 
       await addLink(newLink);
@@ -314,6 +327,17 @@ export default function ShareScreen() {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleSelectMedia = (item: MediaItem) => {
+    const mapped = mediaItemToLink(item);
+    setUrl(mapped.url || "");
+    setTitle(mapped.title || "");
+    setDescription(mapped.description || "");
+    setThumbnail(mapped.thumbnail);
+    setMediaMetadata(mapped.metadata || null);
+    setSelectedType(item.kind);
+    setIsMetadataFetched(true);
   };
 
   const handleCancel = () => {
@@ -327,6 +351,8 @@ export default function ShareScreen() {
     // Reset fields when type changes significantly
     if (oldType !== newType) {
       setIsMetadataFetched(false); // Allow re-fetching or new state
+      setMediaMetadata(null);
+      setThumbnail(undefined);
 
       // If changing away from 'image' and URL was a local file
       if (oldType === "image" && url.startsWith("file://")) {
@@ -353,6 +379,7 @@ export default function ShareScreen() {
       if (
         newType !== "other" &&
         newType !== "image" &&
+        !isMediaType(newType) &&
         url &&
         !url.startsWith("file://")
       ) {
@@ -427,6 +454,23 @@ export default function ShareScreen() {
               </View>
             )}
           </>
+        ) : isMediaType(selectedType) ? (
+          <>
+            <MediaSearchPicker
+              kind={selectedType}
+              onSelect={handleSelectMedia}
+              selectedTitle={title || undefined}
+            />
+            {thumbnail ? (
+              <View style={styles.imagePreviewContainer}>
+                <Image
+                  source={{ uri: thumbnail }}
+                  style={styles.imagePreview}
+                  resizeMode="contain"
+                />
+              </View>
+            ) : null}
+          </>
         ) : selectedType !== "other" ? (
           <View
             style={[
@@ -444,8 +488,6 @@ export default function ShareScreen() {
               placeholder={
                 selectedType === "video"
                   ? "Video URL"
-                  : selectedType === "music"
-                  ? "Music URL"
                   : "https://example.com"
               }
               placeholderTextColor={colors.textSecondary}

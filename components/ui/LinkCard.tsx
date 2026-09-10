@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   Image,
   Linking,
+  type GestureResponderEvent,
 } from "react-native";
 import { Link } from "@/types";
 import { useTheme } from "@/context/ThemeContext";
@@ -14,6 +15,7 @@ import { Check, ExternalLink, Clock } from "lucide-react-native";
 import { formatRelativeTime } from "@/utils/dateUtils";
 import Animated, { FadeIn } from "react-native-reanimated";
 import { useLinkStore } from "@/store/linkStore";
+import { getTypeColor, getTypeLabel, isMediaType } from "@/utils/media";
 
 interface LinkCardProps {
   link: Link;
@@ -28,41 +30,30 @@ export default function LinkCard({ link }: LinkCardProps) {
     router.push(`/link/${link.id}`);
   };
 
-  const handleToggleRead = (e: any) => {
+  const handleToggleRead = (e: GestureResponderEvent) => {
     e.stopPropagation();
     if (!link.id) return;
     updateLink(link.id, { is_read: !link.is_read });
   };
 
-  const getTypeLabel = () => {
-    if (link.type === "other") return "Note";
-    return link.type.charAt(0).toUpperCase() + link.type.slice(1);
-  };
-
-  const getTypeColor = () => {
-    switch (link.type) {
-      case "link":
-        return colors.primary;
-      case "video":
-        return "#FF2D55";
-      case "image":
-        return "#34C759"; // Green
-      case "music":
-        return "#5856D6"; // Purple
-      case "other":
-        return "#FF9500"; // Orange
-      default:
-        return colors.secondary;
-    }
-  };
-
-  const handleOpenLink = async () => {
+  const handleOpenLink = async (e: GestureResponderEvent) => {
+    e.stopPropagation();
     if (link?.url) {
       await Linking.openURL(link.url);
     }
   };
 
   const isLocalImage = link.type === "image" && link.url.startsWith("file://");
+
+  const typeLabel = getTypeLabel(link.type);
+  const typeColor = getTypeColor(link.type, colors.primary);
+  const artwork = link.metadata?.artworkUrl || link.thumbnail;
+  const isMedia = isMediaType(link.type);
+  const subtitle = isMedia
+    ? [link.metadata?.artistName, link.metadata?.releaseYear].filter(Boolean).join(" · ")
+    : isLocalImage
+      ? "Image from device"
+      : link.url;
 
   return (
     <Animated.View entering={FadeIn.duration(300).delay(100)}>
@@ -78,6 +69,13 @@ export default function LinkCard({ link }: LinkCardProps) {
         onPress={handlePress}
         activeOpacity={0.8}
       >
+        {artwork ? (
+          <Image
+            source={{ uri: artwork }}
+            style={[styles.artwork, link.type === "movie" ? styles.poster : styles.cover]}
+          />
+        ) : null}
+
         <View style={styles.contentContainer}>
           <View style={styles.titleRow}>
             <Text
@@ -98,18 +96,18 @@ export default function LinkCard({ link }: LinkCardProps) {
             style={[styles.url, { color: colors.textSecondary }]}
             numberOfLines={1}
           >
-            {isLocalImage ? "Image from device" : link.url}
+            {subtitle}
           </Text>
 
           <View style={styles.footer}>
             <View
               style={[
                 styles.typeTag,
-                { backgroundColor: getTypeColor() + "20" },
+                { backgroundColor: typeColor + "20" },
               ]}
             >
-              <Text style={[styles.typeText, { color: getTypeColor() }]}>
-                {getTypeLabel()}
+              <Text style={[styles.typeText, { color: typeColor }]}>
+                {typeLabel}
               </Text>
             </View>
 
@@ -155,6 +153,19 @@ const styles = StyleSheet.create({
   },
   contentContainer: {
     flex: 1,
+  },
+  artwork: {
+    borderRadius: 8,
+    marginRight: 12,
+    backgroundColor: "#111",
+  },
+  cover: {
+    width: 56,
+    height: 56,
+  },
+  poster: {
+    width: 44,
+    height: 64,
   },
   titleRow: {
     flexDirection: "row",

@@ -1,6 +1,7 @@
 import { create } from "zustand";
-import { Link } from "@/types";
+import { Link, MediaMetadata } from "@/types";
 import { supabase } from '@/lib/supabase';
+import { mergeCachedMetadata, saveCachedMediaMetadata } from '@/utils/mediaCache';
 
 interface LinkState {
   links: Link[];
@@ -63,10 +64,12 @@ export const useLinkStore = create<LinkState>((set, get) => ({
           is_read: linkData.is_read,
           read_at: linkData.read_at,
           progress: linkData.progress,
+          metadata: (linkData.metadata as MediaMetadata | null) || null,
         };
       });
 
-      set({ links: linksWithCategories, isLoading: false });
+      const linksWithCache = await mergeCachedMetadata(linksWithCategories);
+      set({ links: linksWithCache, isLoading: false });
     } catch (error) {
       console.error('Error fetching links:', error);
       set({ error: 'Erro ao carregar links', isLoading: false });
@@ -83,24 +86,36 @@ export const useLinkStore = create<LinkState>((set, get) => ({
       }
 
       // Remove id since Supabase will auto-generate
-      const newLinkData = {
+      const newLinkData: Record<string, unknown> = {
         url: linkData.url || "",
         title: linkData.title || "",
         description: linkData.description || "",
         thumbnail: linkData.thumbnail,
-        type: linkData.type || "article",
+        type: linkData.type || "link",
         user_id: session.session.user.id,
         is_read: linkData.is_read || false,
         read_at: linkData.read_at,
         progress: linkData.progress || 0,
+        metadata: linkData.metadata ?? null,
       };
 
-      // Inserir link
-      const { data: insertedLink, error: linkError } = await supabase
+      // Inserir link (retry without metadata if the column is not migrated yet)
+      let { data: insertedLink, error: linkError } = await supabase
         .from('links')
         .insert([newLinkData])
         .select()
         .single();
+
+      if (linkError && isMissingMetadataColumn(linkError)) {
+        const { metadata: _ignored, ...withoutMetadata } = newLinkData;
+        const retry = await supabase
+          .from('links')
+          .insert([withoutMetadata])
+          .select()
+          .single();
+        insertedLink = retry.data;
+        linkError = retry.error;
+      }
 
       if (linkError) throw linkError;
 
@@ -132,7 +147,12 @@ export const useLinkStore = create<LinkState>((set, get) => ({
         is_read: insertedLink.is_read,
         read_at: insertedLink.read_at,
         progress: insertedLink.progress,
+        metadata: (insertedLink.metadata as MediaMetadata | null) || linkData.metadata || null,
       };
+
+      if (newLink.id && newLink.metadata) {
+        await saveCachedMediaMetadata(newLink.id, newLink.metadata);
+      }
 
       set(state => ({
         links: [newLink, ...state.links],
@@ -152,7 +172,7 @@ export const useLinkStore = create<LinkState>((set, get) => ({
     
     try {
       // Atualizar dados do link
-      const updateData: any = {};
+      const updateData: Record<string, unknown> = {};
       if (data.title !== undefined) updateData.title = data.title;
       if (data.description !== undefined) updateData.description = data.description;
       if (data.thumbnail !== undefined) updateData.thumbnail = data.thumbnail;
@@ -160,14 +180,30 @@ export const useLinkStore = create<LinkState>((set, get) => ({
       if (data.is_read !== undefined) updateData.is_read = data.is_read;
       if (data.read_at !== undefined) updateData.read_at = data.read_at;
       if (data.progress !== undefined) updateData.progress = data.progress;
+      if (data.metadata !== undefined) updateData.metadata = data.metadata;
+      if (data.url !== undefined) updateData.url = data.url;
 
       if (Object.keys(updateData).length > 0) {
-        const { error: linkError } = await supabase
+        let { error: linkError } = await supabase
           .from('links')
           .update(updateData)
           .eq('id', id);
 
+        if (linkError && isMissingMetadataColumn(linkError) && 'metadata' in updateData) {
+          const { metadata: _ignored, ...withoutMetadata } = updateData;
+          if (Object.keys(withoutMetadata).length > 0) {
+            const retry = await supabase.from('links').update(withoutMetadata).eq('id', id);
+            linkError = retry.error;
+          } else {
+            linkError = null;
+          }
+        }
+
         if (linkError) throw linkError;
+      }
+
+      if (data.metadata) {
+        await saveCachedMediaMetadata(id, data.metadata);
       }
 
       // Atualizar categorias se fornecidas
@@ -202,9 +238,14 @@ export const useLinkStore = create<LinkState>((set, get) => ({
       }
 
       set(state => ({
-        links: state.links.map(link =>
-          link.id === id ? { ...link, ...data } : link
-        ),
+        links: state.links.map(link => {
+          if (link.id !== id) return link;
+          const next = { ...link, ...data };
+          if (data.metadata === undefined) {
+            next.metadata = link.metadata;
+          }
+          return next;
+        }),
         isLoading: false
       }));
     } catch (error) {
@@ -318,3 +359,13 @@ export const useLinkStore = create<LinkState>((set, get) => ({
     }
   },
 }));
+
+function isMissingMetadataColumn(error: { message?: string; code?: string } | null): boolean {
+  if (!error) return false;
+  const message = (error.message || '').toLowerCase();
+  return (
+    error.code === 'PGRST204' ||
+    error.code === '42703' ||
+    message.includes('metadata')
+  );
+}

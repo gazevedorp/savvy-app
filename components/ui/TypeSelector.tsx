@@ -2,7 +2,7 @@ import React from 'react';
 import { View, StyleSheet, Text, TouchableOpacity } from 'react-native';
 import { LinkType } from '@/types';
 import { useTheme } from '@/context/ThemeContext';
-import { Link as LinkIconLucide, Video, Headphones, Image as ImageIcon, FileText, Type } from 'lucide-react-native';
+import { Link as LinkIconLucide, Video, Headphones, FileText, Film } from 'lucide-react-native';
 
 interface TypeSelectorProps {
   selectedType: LinkType;
@@ -33,9 +33,15 @@ export default function TypeSelector({ selectedType, onSelectType }: TypeSelecto
     // },
     {
       type: 'music',
-      label: 'Music',
+      label: 'Música',
       icon: <Headphones size={20} color={selectedType === 'music' ? '#fff' : '#5856D6'} />,
       color: '#5856D6',
+    },
+    {
+      type: 'movie',
+      label: 'Filme',
+      icon: <Film size={20} color={selectedType === 'movie' ? '#fff' : '#C9A227'} />,
+      color: '#C9A227',
     },
     {
       type: 'other',
