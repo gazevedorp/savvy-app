@@ -23,7 +23,7 @@ function SettingsSection({
   const { colors, spacing, typography } = useTheme();
 
   return (
-    <View style={{ marginBottom: spacing.xl }}>
+    <View style={{ marginBottom: spacing.xl, maxWidth: 640, width: '100%', alignSelf: 'center' }}>
       <Text
         style={[
           typography.overline,
@@ -191,7 +191,13 @@ export default function SettingsScreen() {
         />
       </SettingsSection>
 
-      <Text style={[typography.micro, styles.footerText, { color: colors.textSecondary }]}>
+      <Text
+        style={[
+          typography.micro,
+          styles.footerText,
+          { color: colors.textSecondary, maxWidth: 640, alignSelf: 'center', width: '100%' },
+        ]}
+      >
         Innovai Hub © 2026
       </Text>
 

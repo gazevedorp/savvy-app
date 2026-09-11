@@ -48,53 +48,56 @@ export default function AuthScreen({
             {
               paddingHorizontal: spacing.xl,
               paddingBottom: spacing.xxl,
+              alignItems: 'center',
             },
           ]}
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
-          <View
-            style={[
-              styles.brand,
-              {
-                marginTop: onBack ? spacing.lg : spacing.xxxl,
-                marginBottom: spacing.xl,
-              },
-            ]}
-          >
-            <Logo size={logoSize} />
-          </View>
-
-          {onBack ? null : (
-            <Text
+          <View style={styles.column}>
+            <View
               style={[
-                typography.hero,
-                styles.heading,
-                { color: colors.text, marginBottom: subtitle ? spacing.xs : spacing.xl },
-              ]}
-            >
-              {title}
-            </Text>
-          )}
-
-          {subtitle ? (
-            <Text
-              style={[
-                typography.body,
-                styles.subtitle,
+                styles.brand,
                 {
-                  color: colors.textSecondary,
+                  marginTop: onBack ? spacing.lg : spacing.xxxl,
                   marginBottom: spacing.xl,
-                  marginTop: onBack ? 0 : undefined,
                 },
               ]}
             >
-              {subtitle}
-            </Text>
-          ) : null}
+              <Logo size={logoSize} />
+            </View>
 
-          <View style={styles.body}>{children}</View>
-          {footer ? <View style={[styles.footer, { marginTop: spacing.xl }]}>{footer}</View> : null}
+            {onBack ? null : (
+              <Text
+                style={[
+                  typography.hero,
+                  styles.heading,
+                  { color: colors.text, marginBottom: subtitle ? spacing.xs : spacing.xl },
+                ]}
+              >
+                {title}
+              </Text>
+            )}
+
+            {subtitle ? (
+              <Text
+                style={[
+                  typography.body,
+                  styles.subtitle,
+                  {
+                    color: colors.textSecondary,
+                    marginBottom: spacing.xl,
+                    marginTop: onBack ? 0 : undefined,
+                  },
+                ]}
+              >
+                {subtitle}
+              </Text>
+            ) : null}
+
+            <View style={styles.body}>{children}</View>
+            {footer ? <View style={[styles.footer, { marginTop: spacing.xl }]}>{footer}</View> : null}
+          </View>
         </ScrollView>
       </KeyboardAvoidingView>
     </Screen>
@@ -107,6 +110,10 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     flexGrow: 1,
+  },
+  column: {
+    width: '100%',
+    maxWidth: 440,
   },
   brand: {
     alignItems: 'center',
