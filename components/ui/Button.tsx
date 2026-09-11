@@ -77,7 +77,9 @@ export default function Button({
           borderColor: getBorderColor(),
           width: fullWidth ? '100%' : 'auto',
           borderRadius: radius.md,
-          padding: spacing.sm,
+          paddingVertical: spacing.sm,
+          paddingHorizontal: spacing.md,
+          minHeight: 48,
         },
         variant === 'outline' && styles.outlined,
       ]}
@@ -111,7 +113,6 @@ const styles = StyleSheet.create({
   button: {
     alignItems: 'center',
     justifyContent: 'center',
-    minHeight: 44,
   },
   outlined: {
     borderWidth: 1,

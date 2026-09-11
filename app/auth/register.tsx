@@ -1,28 +1,18 @@
 import React, { useState } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
-  Alert,
-  TouchableOpacity,
-  KeyboardAvoidingView,
-  Platform,
-} from 'react-native';
+import { View, Text, StyleSheet, Alert, TouchableOpacity } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useTheme } from '@/context/ThemeContext';
 import { useAuth } from '@/context/AuthContext';
-import Logo from '@/components/ui/Logo';
 import InputField from '@/components/ui/InputField';
 import Button from '@/components/ui/Button';
-import Screen from '@/components/ui/Screen';
+import AuthScreen from '@/components/ui/AuthScreen';
 import { AuthFormData } from '@/types';
 
 export default function RegisterScreen() {
-  const { colors } = useTheme();
+  const { colors, typography } = useTheme();
   const { signUp } = useAuth();
   const router = useRouter();
-  
+
   const [formData, setFormData] = useState<AuthFormData>({
     email: '',
     password: '',
@@ -72,7 +62,7 @@ export default function RegisterScreen() {
     setLoading(true);
     try {
       const { error } = await signUp(formData);
-      
+
       if (error) {
         Alert.alert('Erro', error);
       } else {
@@ -90,17 +80,15 @@ export default function RegisterScreen() {
   };
 
   const handleInputChange = (field: string, value: string) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
+    setFormData((prev) => ({ ...prev, [field]: value }));
     if (errors[field]) {
-      setErrors(prev => ({ ...prev, [field]: '' }));
+      setErrors((prev) => ({ ...prev, [field]: '' }));
     }
   };
 
   const formatPhone = (text: string) => {
-    // Remove all non-numeric characters
     const numeric = text.replace(/\D/g, '');
-    
-    // Apply formatting
+
     if (numeric.length <= 2) {
       return `(${numeric}`;
     } else if (numeric.length <= 6) {
@@ -118,124 +106,81 @@ export default function RegisterScreen() {
   };
 
   return (
-    <Screen safe>
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={styles.keyboardView}
-      >
-        <ScrollView
-          contentContainerStyle={styles.scrollContent}
-          showsVerticalScrollIndicator={false}
-        >
-          <View style={styles.logoContainer}>
-            <Logo size="large" />
-          </View>
+    <AuthScreen
+      title="Criar conta"
+      subtitle="Organize tudo o que você quer ver depois, em um só lugar."
+      logoSize="medium"
+      footer={
+        <View style={styles.loginContainer}>
+          <Text style={[typography.body, { color: colors.textSecondary }]}>Já tem uma conta? </Text>
+          <TouchableOpacity onPress={() => router.push('./login' as any)} accessibilityRole="button">
+            <Text style={[typography.label, { color: colors.primary }]}>Faça login</Text>
+          </TouchableOpacity>
+        </View>
+      }
+    >
+      <InputField
+        label="Nome completo"
+        value={formData.fullName || ''}
+        onChangeText={(value) => handleInputChange('fullName', value)}
+        error={errors.fullName}
+        placeholder="Seu nome completo"
+        autoCapitalize="words"
+        required
+      />
 
-          <View style={styles.formContainer}>
-            <InputField
-              label="Nome completo"
-              value={formData.fullName || ''}
-              onChangeText={(value) => handleInputChange('fullName', value)}
-              error={errors.fullName}
-              placeholder="Seu nome completo"
-              autoCapitalize="words"
-              required
-            />
+      <InputField
+        label="Telefone"
+        value={formData.phone || ''}
+        onChangeText={handlePhoneChange}
+        error={errors.phone}
+        placeholder="(11) 99999-9999"
+        keyboardType="phone-pad"
+      />
 
-            <InputField
-              label="Telefone"
-              value={formData.phone || ''}
-              onChangeText={handlePhoneChange}
-              error={errors.phone}
-              placeholder="(11) 99999-9999"
-              keyboardType="phone-pad"
-            />
+      <InputField
+        label="Email"
+        value={formData.email}
+        onChangeText={(value) => handleInputChange('email', value)}
+        error={errors.email}
+        placeholder="seu@email.com"
+        keyboardType="email-address"
+        autoCapitalize="none"
+        autoCorrect={false}
+        required
+      />
 
-            <InputField
-              label="Email"
-              value={formData.email}
-              onChangeText={(value) => handleInputChange('email', value)}
-              error={errors.email}
-              placeholder="seu@email.com"
-              keyboardType="email-address"
-              autoCapitalize="none"
-              autoCorrect={false}
-              required
-            />
+      <InputField
+        label="Senha"
+        value={formData.password}
+        onChangeText={(value) => handleInputChange('password', value)}
+        error={errors.password}
+        placeholder="Sua senha"
+        isPassword
+        required
+      />
 
-            <InputField
-              label="Senha"
-              value={formData.password}
-              onChangeText={(value) => handleInputChange('password', value)}
-              error={errors.password}
-              placeholder="Sua senha"
-              isPassword
-              required
-            />
+      <InputField
+        label="Confirmar senha"
+        value={formData.confirmPassword || ''}
+        onChangeText={(value) => handleInputChange('confirmPassword', value)}
+        error={errors.confirmPassword}
+        placeholder="Confirme sua senha"
+        isPassword
+        required
+      />
 
-            <InputField
-              label="Confirmar senha"
-              value={formData.confirmPassword || ''}
-              onChangeText={(value) => handleInputChange('confirmPassword', value)}
-              error={errors.confirmPassword}
-              placeholder="Confirme sua senha"
-              isPassword
-              required
-            />
-
-            <Button
-              title="Criar conta"
-              onPress={handleRegister}
-              loading={loading}
-              disabled={loading}
-            />
-
-            <View style={styles.loginContainer}>
-              <Text style={[styles.loginText, { color: colors.textSecondary }]}>
-                Já tem uma conta?{' '}
-              </Text>
-              <TouchableOpacity onPress={() => router.push('./login' as any)}>
-                <Text style={[styles.loginLink, { color: colors.primary }]}>
-                  Faça login
-                </Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </ScrollView>
-      </KeyboardAvoidingView>
-    </Screen>
+      <Button title="Criar conta" onPress={handleRegister} loading={loading} disabled={loading} />
+    </AuthScreen>
   );
 }
 
 const styles = StyleSheet.create({
-  keyboardView: {
-    flex: 1,
-  },
-  scrollContent: {
-    flexGrow: 1,
-    paddingHorizontal: 24,
-  },
-  logoContainer: {
-    alignItems: 'center',
-    marginTop: 60,
-    marginBottom: 48,
-  },
-  formContainer: {
-    flex: 1,
-  },
   loginContainer: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     justifyContent: 'center',
     alignItems: 'center',
-    marginTop: 24,
-    marginBottom: 32,
-  },
-  loginText: {
-    fontFamily: 'Inter-Regular',
-    fontSize: 14,
-  },
-  loginLink: {
-    fontFamily: 'Inter-Medium',
-    fontSize: 14,
+    marginBottom: 8,
   },
 });
