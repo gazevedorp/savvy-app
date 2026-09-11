@@ -1,212 +1,96 @@
 # Schemas das Tabelas do Supabase
 
-## 1. Tabela Categories
+**Apply path (Phase C):** run [`migrations/20260910_phase_c_supabase_baseline.sql`](./migrations/20260910_phase_c_supabase_baseline.sql) in the SQL Editor. That file is the single source of truth for tables, `links.metadata`, indexes, type CHECK, FKs, and RLS. This document describes the resulting schema.
 
-```sql
--- Criar tabela de categorias
-CREATE TABLE categories (
-  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  name TEXT NOT NULL,
-  color TEXT NOT NULL,
-  icon TEXT,
-  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-);
+See [`migrations/README.md`](./migrations/README.md) for how to apply and what not to run instead.
 
--- Habilitar RLS
-ALTER TABLE categories ENABLE ROW LEVEL SECURITY;
+## 1. `categories`
 
--- Política para ver apenas suas próprias categorias
-CREATE POLICY "Users can view own categories" ON categories
-  FOR SELECT USING (auth.uid() = user_id);
+| Column | Type | Notes |
+| --- | --- | --- |
+| `id` | UUID | `gen_random_uuid()`, PK |
+| `name` | TEXT | required |
+| `color` | TEXT | hex |
+| `icon` | TEXT | optional |
+| `user_id` | UUID | `auth.users(id)` ON DELETE CASCADE |
+| `created_at` | TIMESTAMPTZ | default `NOW()` |
 
--- Política para inserir suas próprias categorias
-CREATE POLICY "Users can insert own categories" ON categories
-  FOR INSERT WITH CHECK (auth.uid() = user_id);
+RLS: owner-only SELECT / INSERT / UPDATE / DELETE (`auth.uid() = user_id`).
 
--- Política para atualizar suas próprias categorias
-CREATE POLICY "Users can update own categories" ON categories
-  FOR UPDATE USING (auth.uid() = user_id);
+Index: `(user_id, created_at DESC)`.
 
--- Política para deletar suas próprias categorias
-CREATE POLICY "Users can delete own categories" ON categories
-  FOR DELETE USING (auth.uid() = user_id);
+## 2. `links`
+
+| Column | Type | Notes |
+| --- | --- | --- |
+| `id` | UUID | `gen_random_uuid()`, PK |
+| `url` | TEXT | required |
+| `title` | TEXT | required |
+| `description` | TEXT | optional |
+| `thumbnail` | TEXT | optional |
+| `type` | TEXT | CHECK: `link \| video \| image \| music \| movie \| other` (same as `LINK_TYPES` in `types/index.ts`) |
+| `metadata` | JSONB | optional media payload (music/movie) |
+| `user_id` | UUID | `auth.users(id)` ON DELETE CASCADE |
+| `is_read` | BOOLEAN | default `false` |
+| `read_at` | TIMESTAMPTZ | optional |
+| `progress` | INTEGER | 0–100, default `0` |
+| `created_at` | TIMESTAMPTZ | default `NOW()` |
+
+RLS: owner-only SELECT / INSERT / UPDATE / DELETE.
+
+Indexes:
+
+- `(user_id, created_at DESC)` — Home list
+- `(user_id, is_read)` — unread filters
+- GIN `(metadata)` — optional JSONB lookups
+
+### `metadata` shape (app)
+
+Written and read by `store/linkStore.ts`. Matches `MediaMetadata` in `types/index.ts`:
+
+```ts
+{
+  source: 'itunes' | 'deezer' | 'tmdb' | 'wikipedia',
+  sourceId: string,
+  artistName?: string,
+  collectionName?: string,
+  releaseDate?: string,
+  releaseYear?: string,
+  genres?: string[],
+  artworkUrl?: string,
+  previewUrl?: string,
+  durationMs?: number,
+  contentAdvisory?: string,
+  kind?: string
+}
 ```
 
-## 2. Tabela Links
+After Phase C, the JSONB column is the primary path. AsyncStorage (`utils/mediaCache.ts`) only gap-fills rows that still lack the column (pre-migration DBs). Removing that dual-write is Phase D.
 
-```sql
--- Criar tabela de links
-CREATE TABLE links (
-  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  url TEXT NOT NULL,
-  title TEXT NOT NULL,
-  description TEXT,
-  thumbnail TEXT,
-  type TEXT NOT NULL,
-  metadata JSONB DEFAULT NULL,
-  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
-  is_read BOOLEAN DEFAULT FALSE,
-  read_at TIMESTAMP WITH TIME ZONE,
-  progress INTEGER DEFAULT 0,
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-);
+### Legacy `type` values
 
--- Habilitar RLS
-ALTER TABLE links ENABLE ROW LEVEL SECURITY;
+The migration remaps before adding the CHECK:
 
--- Política para ver apenas seus próprios links
-CREATE POLICY "Users can view own links" ON links
-  FOR SELECT USING (auth.uid() = user_id);
+| Old (docs / early drafts) | New |
+| --- | --- |
+| `article`, `document` | `link` |
+| `podcast` | `music` |
+| anything else unknown | `other` |
 
--- Política para inserir seus próprios links
-CREATE POLICY "Users can insert own links" ON links
-  FOR INSERT WITH CHECK (auth.uid() = user_id);
+## 3. `link_categories`
 
--- Política para atualizar seus próprios links
-CREATE POLICY "Users can update own links" ON links
-  FOR UPDATE USING (auth.uid() = user_id);
+| Column | Type | Notes |
+| --- | --- | --- |
+| `id` | UUID | `gen_random_uuid()`, PK |
+| `link_id` | UUID | → `links(id)` ON DELETE CASCADE |
+| `category_id` | UUID | → `categories(id)` ON DELETE CASCADE |
+| `user_id` | UUID | → `auth.users(id)` ON DELETE CASCADE |
+| `created_at` | TIMESTAMPTZ | default `NOW()` |
 
--- Política para deletar seus próprios links
-CREATE POLICY "Users can delete own links" ON links
-  FOR DELETE USING (auth.uid() = user_id);
-```
+Unique `(link_id, category_id)`. RLS: owner-only (including UPDATE). Indexes on `user_id`, `link_id`, `category_id`.
 
-## 3. Tabela Link_Categories (Relacionamento)
+Atomic rewrite of this join table is Phase D — not in the baseline.
 
-```sql
--- Criar tabela de relacionamento entre links e categorias
-CREATE TABLE link_categories (
-  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  link_id UUID REFERENCES links(id) ON DELETE CASCADE,
-  category_id UUID REFERENCES categories(id) ON DELETE CASCADE,
-  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-  UNIQUE(link_id, category_id)
-);
+## 4. Storage
 
--- Habilitar RLS
-ALTER TABLE link_categories ENABLE ROW LEVEL SECURITY;
-
--- Política para ver apenas seus próprios relacionamentos
-CREATE POLICY "Users can view own link_categories" ON link_categories
-  FOR SELECT USING (auth.uid() = user_id);
-
--- Política para inserir seus próprios relacionamentos
-CREATE POLICY "Users can insert own link_categories" ON link_categories
-  FOR INSERT WITH CHECK (auth.uid() = user_id);
-
--- Política para deletar seus próprios relacionamentos
-CREATE POLICY "Users can delete own link_categories" ON link_categories
-  FOR DELETE USING (auth.uid() = user_id);
-```
-
-## 4. Script Completo para Execução
-
-Execute este script completo no SQL Editor do Supabase:
-
-```sql
--- ================================================
--- CATEGORIAS
--- ================================================
-
-CREATE TABLE categories (
-  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  name TEXT NOT NULL,
-  color TEXT NOT NULL,
-  icon TEXT,
-  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-);
-
-ALTER TABLE categories ENABLE ROW LEVEL SECURITY;
-
-CREATE POLICY "Users can view own categories" ON categories
-  FOR SELECT USING (auth.uid() = user_id);
-
-CREATE POLICY "Users can insert own categories" ON categories
-  FOR INSERT WITH CHECK (auth.uid() = user_id);
-
-CREATE POLICY "Users can update own categories" ON categories
-  FOR UPDATE USING (auth.uid() = user_id);
-
-CREATE POLICY "Users can delete own categories" ON categories
-  FOR DELETE USING (auth.uid() = user_id);
-
--- ================================================
--- LINKS
--- ================================================
-
-CREATE TABLE links (
-  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  url TEXT NOT NULL,
-  title TEXT NOT NULL,
-  description TEXT,
-  thumbnail TEXT,
-  type TEXT NOT NULL,
-  metadata JSONB DEFAULT NULL,
-  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
-  is_read BOOLEAN DEFAULT FALSE,
-  read_at TIMESTAMP WITH TIME ZONE,
-  progress INTEGER DEFAULT 0,
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-);
-
-ALTER TABLE links ENABLE ROW LEVEL SECURITY;
-
-CREATE POLICY "Users can view own links" ON links
-  FOR SELECT USING (auth.uid() = user_id);
-
-CREATE POLICY "Users can insert own links" ON links
-  FOR INSERT WITH CHECK (auth.uid() = user_id);
-
-CREATE POLICY "Users can update own links" ON links
-  FOR UPDATE USING (auth.uid() = user_id);
-
-CREATE POLICY "Users can delete own links" ON links
-  FOR DELETE USING (auth.uid() = user_id);
-
--- ================================================
--- RELACIONAMENTO LINK-CATEGORIAS
--- ================================================
-
-CREATE TABLE link_categories (
-  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  link_id UUID REFERENCES links(id) ON DELETE CASCADE,
-  category_id UUID REFERENCES categories(id) ON DELETE CASCADE,
-  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-  UNIQUE(link_id, category_id)
-);
-
-ALTER TABLE link_categories ENABLE ROW LEVEL SECURITY;
-
-CREATE POLICY "Users can view own link_categories" ON link_categories
-  FOR SELECT USING (auth.uid() = user_id);
-
-CREATE POLICY "Users can insert own link_categories" ON link_categories
-  FOR INSERT WITH CHECK (auth.uid() = user_id);
-
-CREATE POLICY "Users can delete own link_categories" ON link_categories
-  FOR DELETE USING (auth.uid() = user_id);
-```
-
-## Estrutura Final
-
-- **categories**: Categorias do usuário
-- **links**: Links do usuário (incluindo `metadata` JSONB para música/filme)
-- **link_categories**: Relacionamento N:N entre links e categorias
-- **RLS habilitado**: Cada usuário vê apenas seus próprios dados
-- **CASCADE DELETE**: Se usuário for deletado, todos os dados são removidos
-- **Relacionamento flexível**: Links podem ter 0, 1 ou múltiplas categorias
-
-## 5. Migração: metadados de mídia
-
-Se a tabela `links` já existe, execute:
-
-```sql
-ALTER TABLE links
-  ADD COLUMN IF NOT EXISTS metadata JSONB DEFAULT NULL;
-```
-
-O app continua funcionando sem essa coluna: título, descrição, thumbnail e URL já carregam o essencial, e o metadata extra é cacheado no AsyncStorage até a migração ser aplicada.
+Image bucket + storage RLS are **not** part of Phase C. See [`SUPABASE_STORAGE_SETUP.md`](./SUPABASE_STORAGE_SETUP.md).

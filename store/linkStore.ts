@@ -1,7 +1,8 @@
 import { create } from "zustand";
-import { Link, MediaMetadata } from "@/types";
+import { Link, MediaMetadata, normalizeLinkType } from "@/types";
 import { supabase } from '@/lib/supabase';
 import { mergeCachedMetadata, saveCachedMediaMetadata } from '@/utils/mediaCache';
+import { isMissingMetadataColumn } from '@/utils/supabaseSchema';
 
 interface LinkState {
   links: Link[];
@@ -57,13 +58,14 @@ export const useLinkStore = create<LinkState>((set, get) => ({
           title: linkData.title,
           description: linkData.description,
           thumbnail: linkData.thumbnail,
-          type: linkData.type as any,
+          type: normalizeLinkType(linkData.type),
           categoryIds,
           user_id: linkData.user_id,
           created_at: linkData.created_at,
           is_read: linkData.is_read,
           read_at: linkData.read_at,
           progress: linkData.progress,
+          // DB column is the primary source after Phase C; cache fills gaps only.
           metadata: (linkData.metadata as MediaMetadata | null) || null,
         };
       });
@@ -91,7 +93,7 @@ export const useLinkStore = create<LinkState>((set, get) => ({
         title: linkData.title || "",
         description: linkData.description || "",
         thumbnail: linkData.thumbnail,
-        type: linkData.type || "link",
+        type: normalizeLinkType(linkData.type || "link"),
         user_id: session.session.user.id,
         is_read: linkData.is_read || false,
         read_at: linkData.read_at,
@@ -99,7 +101,10 @@ export const useLinkStore = create<LinkState>((set, get) => ({
         metadata: linkData.metadata ?? null,
       };
 
-      // Inserir link (retry without metadata if the column is not migrated yet)
+      // Persist metadata on the JSONB column. Retry without it only if Phase C
+      // has not been applied yet (legacy DBs). Dual-write to AsyncStorage is
+      // limited to that fallback — Phase D removes it.
+      let persistedMetadataToDb = true;
       let { data: insertedLink, error: linkError } = await supabase
         .from('links')
         .insert([newLinkData])
@@ -107,6 +112,7 @@ export const useLinkStore = create<LinkState>((set, get) => ({
         .single();
 
       if (linkError && isMissingMetadataColumn(linkError)) {
+        persistedMetadataToDb = false;
         const { metadata: _ignored, ...withoutMetadata } = newLinkData;
         const retry = await supabase
           .from('links')
@@ -140,7 +146,7 @@ export const useLinkStore = create<LinkState>((set, get) => ({
         title: insertedLink.title,
         description: insertedLink.description,
         thumbnail: insertedLink.thumbnail,
-        type: insertedLink.type,
+        type: normalizeLinkType(insertedLink.type),
         categoryIds: linkData.categoryIds || [],
         user_id: insertedLink.user_id,
         created_at: insertedLink.created_at,
@@ -150,7 +156,7 @@ export const useLinkStore = create<LinkState>((set, get) => ({
         metadata: (insertedLink.metadata as MediaMetadata | null) || linkData.metadata || null,
       };
 
-      if (newLink.id && newLink.metadata) {
+      if (newLink.id && newLink.metadata && !persistedMetadataToDb) {
         await saveCachedMediaMetadata(newLink.id, newLink.metadata);
       }
 
@@ -176,13 +182,14 @@ export const useLinkStore = create<LinkState>((set, get) => ({
       if (data.title !== undefined) updateData.title = data.title;
       if (data.description !== undefined) updateData.description = data.description;
       if (data.thumbnail !== undefined) updateData.thumbnail = data.thumbnail;
-      if (data.type !== undefined) updateData.type = data.type;
+      if (data.type !== undefined) updateData.type = normalizeLinkType(data.type);
       if (data.is_read !== undefined) updateData.is_read = data.is_read;
       if (data.read_at !== undefined) updateData.read_at = data.read_at;
       if (data.progress !== undefined) updateData.progress = data.progress;
       if (data.metadata !== undefined) updateData.metadata = data.metadata;
       if (data.url !== undefined) updateData.url = data.url;
 
+      let persistedMetadataToDb = true;
       if (Object.keys(updateData).length > 0) {
         let { error: linkError } = await supabase
           .from('links')
@@ -190,6 +197,7 @@ export const useLinkStore = create<LinkState>((set, get) => ({
           .eq('id', id);
 
         if (linkError && isMissingMetadataColumn(linkError) && 'metadata' in updateData) {
+          persistedMetadataToDb = false;
           const { metadata: _ignored, ...withoutMetadata } = updateData;
           if (Object.keys(withoutMetadata).length > 0) {
             const retry = await supabase.from('links').update(withoutMetadata).eq('id', id);
@@ -202,7 +210,7 @@ export const useLinkStore = create<LinkState>((set, get) => ({
         if (linkError) throw linkError;
       }
 
-      if (data.metadata) {
+      if (data.metadata && !persistedMetadataToDb) {
         await saveCachedMediaMetadata(id, data.metadata);
       }
 
@@ -359,13 +367,3 @@ export const useLinkStore = create<LinkState>((set, get) => ({
     }
   },
 }));
-
-function isMissingMetadataColumn(error: { message?: string; code?: string } | null): boolean {
-  if (!error) return false;
-  const message = (error.message || '').toLowerCase();
-  return (
-    error.code === 'PGRST204' ||
-    error.code === '42703' ||
-    message.includes('metadata')
-  );
-}
