@@ -32,7 +32,7 @@ export default function ConfirmationModal({
       visible={visible}
       onRequestClose={onCancel}
     >
-      <View style={styles.centeredView}>
+      <View style={[styles.centeredView, { backgroundColor: colors.overlay }]}>
         <View
           style={[
             styles.modalView,
@@ -40,6 +40,8 @@ export default function ConfirmationModal({
               backgroundColor: colors.card,
               borderRadius: radius.lg,
               padding: spacing.xl,
+              borderWidth: 1,
+              borderColor: colors.border,
             },
             elevation.md,
           ]}
@@ -74,7 +76,7 @@ export default function ConfirmationModal({
               ]}
               onPress={onConfirm}
             >
-              <Text style={[styles.buttonText, { color: '#FFFFFF' }]}>
+              <Text style={[styles.buttonText, { color: colors.onPrimary }]}>
                 {confirmText}
               </Text>
             </TouchableOpacity>
@@ -90,7 +92,6 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
   },
   modalView: {
     margin: 20,

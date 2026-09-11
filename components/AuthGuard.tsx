@@ -5,7 +5,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useTheme } from '@/context/ThemeContext';
 
 export default function AuthGuard({ children }: { children: React.ReactNode }) {
-  const { session, loading } = useAuth();
+  const { session, loading, passwordRecovery } = useAuth();
   const { colors } = useTheme();
   const router = useRouter();
   const segments = useSegments();
@@ -14,24 +14,32 @@ export default function AuthGuard({ children }: { children: React.ReactNode }) {
     if (loading) return;
 
     const inAuthGroup = segments[0] === 'auth';
+    const inResetPassword = segments.join('/').includes('auth/reset-password');
+
+    if (passwordRecovery) {
+      if (!inResetPassword) {
+        router.replace('/auth/reset-password');
+      }
+      return;
+    }
 
     if (!session && !inAuthGroup) {
-      // Redirect to login if not authenticated
       router.replace('/auth/login');
     } else if (session && inAuthGroup) {
-      // Redirect to main app if authenticated
       router.replace('/(tabs)');
     }
-  }, [session, loading, segments]);
+  }, [session, loading, segments, passwordRecovery, router]);
 
   if (loading) {
     return (
-      <View style={{
-        flex: 1,
-        justifyContent: 'center',
-        alignItems: 'center',
-        backgroundColor: colors.background,
-      }}>
+      <View
+        style={{
+          flex: 1,
+          justifyContent: 'center',
+          alignItems: 'center',
+          backgroundColor: colors.background,
+        }}
+      >
         <ActivityIndicator size="large" color={colors.primary} />
       </View>
     );

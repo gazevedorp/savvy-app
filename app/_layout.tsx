@@ -6,14 +6,17 @@ import { useFrameworkReady } from '@/hooks/useFrameworkReady';
 import { useFonts } from 'expo-font';
 import { Inter_400Regular, Inter_500Medium, Inter_700Bold } from '@expo-google-fonts/inter';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
-import { Platform } from 'react-native';
-import { ThemeProvider } from '@/context/ThemeContext';
+import { ThemeProvider, useTheme } from '@/context/ThemeContext';
 import { AuthProvider } from '@/context/AuthContext';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import AuthGuard from '@/components/AuthGuard';
 
-// Prevent splash screen from auto-hiding
 SplashScreen.preventAutoHideAsync();
+
+function ThemedStatusBar() {
+  const { theme } = useTheme();
+  return <StatusBar style={theme === 'dark' ? 'light' : 'dark'} />;
+}
 
 export default function RootLayout() {
   useFrameworkReady();
@@ -50,7 +53,7 @@ export default function RootLayout() {
                 <Stack.Screen name="+not-found" />
               </Stack>
             </AuthGuard>
-            <StatusBar style={Platform.OS === 'ios' ? 'auto' : 'light'} />
+            <ThemedStatusBar />
           </AuthProvider>
         </ThemeProvider>
       </GestureHandlerRootView>

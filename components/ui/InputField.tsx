@@ -35,14 +35,14 @@ export default function InputField({
 
   return (
     <View style={{ marginBottom: spacing.md }}>
-      <Text style={[typography.caption, { color: colors.text, marginBottom: spacing.xxs + 2 }]}>
+      <Text style={[typography.caption, { color: colors.textSecondary, marginBottom: spacing.xxs + 2 }]}>
         {label}
-        {required && <Text style={{ color: colors.error }}> *</Text>}
+        {required ? <Text style={{ color: colors.error }}> *</Text> : null}
       </Text>
 
       <View>
         {leftIcon ? (
-          <View style={[styles.leftIcon, { left: spacing.sm }]}>{leftIcon}</View>
+          <View style={[styles.leftIcon, { left: spacing.md }]}>{leftIcon}</View>
         ) : null}
         <TextInput
           style={[
@@ -53,10 +53,11 @@ export default function InputField({
               borderColor: error ? colors.error : colors.border,
               color: colors.text,
               borderRadius: radius.md,
-              padding: spacing.sm,
-              paddingLeft: leftIcon ? spacing.xl + spacing.sm : spacing.sm,
+              paddingHorizontal: spacing.md,
+              paddingVertical: spacing.sm,
+              paddingLeft: leftIcon ? spacing.xl + spacing.md : spacing.md,
               fontFamily: 'Inter-Regular',
-              minHeight: multiline ? 96 : undefined,
+              minHeight: multiline ? 96 : 48,
               textAlignVertical: multiline ? 'top' : 'center',
             },
             isPassword && styles.passwordInput,
@@ -70,10 +71,12 @@ export default function InputField({
           {...props}
         />
 
-        {isPassword && (
+        {isPassword ? (
           <TouchableOpacity
-            style={[styles.eyeButton, { right: spacing.sm, top: spacing.sm }]}
+            style={[styles.eyeButton, { right: spacing.sm }]}
             onPress={() => setShowPassword(!showPassword)}
+            accessibilityRole="button"
+            accessibilityLabel={showPassword ? 'Ocultar senha' : 'Mostrar senha'}
           >
             {showPassword ? (
               <EyeOff size={20} color={colors.textSecondary} />
@@ -81,14 +84,14 @@ export default function InputField({
               <Eye size={20} color={colors.textSecondary} />
             )}
           </TouchableOpacity>
-        )}
+        ) : null}
       </View>
 
-      {error && (
+      {error ? (
         <Text style={[typography.caption, { color: colors.error, marginTop: spacing.xxs }]}>
           {error}
         </Text>
-      )}
+      ) : null}
     </View>
   );
 }
@@ -102,6 +105,9 @@ const styles = StyleSheet.create({
   },
   eyeButton: {
     position: 'absolute',
+    top: 0,
+    bottom: 0,
+    justifyContent: 'center',
     padding: 4,
   },
   leftIcon: {

@@ -67,29 +67,18 @@ Estes dados são automaticamente salvos durante o registro e ficam disponíveis 
 
 ## 5. Configurar Links Profundos (Deep Links)
 
-Para redirecionamento após reset de senha, configure no app.json:
+O `app.json` já define o scheme `savvyapp`. Recuperação de senha e confirmação de email usam `expo-linking` (`savvyapp://auth/reset-password` e `savvyapp://auth/login`).
 
-```json
-{
-  "expo": {
-    "scheme": "com.savvyapp",
-    "android": {
-      "intentFilters": [
-        {
-          "action": "VIEW",
-          "data": {
-            "scheme": "com.savvyapp"
-          },
-          "category": [
-            "BROWSABLE",
-            "DEFAULT"
-          ]
-        }
-      ]
-    }
-  }
-}
+No Dashboard do Supabase → **Authentication** → **URL Configuration**, inclua nas Redirect URLs:
+
 ```
+savvyapp://auth/reset-password
+savvyapp://auth/login
+```
+
+Em Expo Go o prefixo é `exp://…/--/auth/reset-password`. Se for testar reset no Go, adicione também a URL que o Metro mostrar, ou um wildcard `exp://**`.
+
+Não é necessário duplicar `intentFilters` no `app.json` — o Expo gera a partir do `scheme`.
 
 ## 6. Testar a Integração
 

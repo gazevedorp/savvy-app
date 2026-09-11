@@ -33,20 +33,20 @@ export const lightColors: ThemeColors = {
 };
 
 export const darkColors: ThemeColors = {
-  primary: '#3DAEA8',
-  primaryLight: '#1A3331',
-  secondary: '#A39C93',
-  accent: '#E07840',
-  background: '#141210',
-  card: '#221F1B',
-  text: '#F4F0EA',
-  textSecondary: '#A39C93',
-  border: '#3A342E',
-  success: '#4CAF70',
-  error: '#E85A54',
-  warning: '#E8A838',
+  primary: '#5BC4BE',
+  primaryLight: '#1E3F3D',
+  secondary: '#C2BBB2',
+  accent: '#E78A55',
+  background: '#12110F',
+  card: '#2A2622',
+  text: '#F7F3ED',
+  textSecondary: '#C2BBB2',
+  border: '#524A42',
+  success: '#5FBF82',
+  error: '#F0716C',
+  warning: '#E8B44A',
   onPrimary: '#0C1615',
-  overlay: 'rgba(0, 0, 0, 0.62)',
+  overlay: 'rgba(0, 0, 0, 0.72)',
 };
 
 export const spacing: ThemeSpacing = {

@@ -1,24 +1,101 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { View, StyleSheet, Text, Switch, Alert } from 'react-native';
+import Constants from 'expo-constants';
 import { useTheme } from '@/context/ThemeContext';
 import { useAuth } from '@/context/AuthContext';
-import { Moon, Sun, Trash2, Info, LogOut, User } from 'lucide-react-native';
+import { Moon, Sun, Trash2, Info, LogOut } from 'lucide-react-native';
 import { useLinkStore } from '@/store/linkStore';
 import { useCategoryStore } from '@/store/categoryStore';
 import ConfirmationModal from '@/components/modals/ConfirmationModal';
-import { useState } from 'react';
 import Screen from '@/components/ui/Screen';
 import Card from '@/components/ui/Card';
 import ListRow from '@/components/ui/ListRow';
 import { alertError } from '@/utils/errors';
+import { getUserInitials } from '@/utils/user';
+
+function SettingsSection({
+  title,
+  children,
+}: {
+  title: string;
+  children: React.ReactNode;
+}) {
+  const { colors, spacing, typography } = useTheme();
+
+  return (
+    <View style={{ marginBottom: spacing.xl }}>
+      <Text
+        style={[
+          typography.overline,
+          {
+            color: colors.textSecondary,
+            paddingHorizontal: spacing.xs,
+            marginBottom: spacing.xs,
+          },
+        ]}
+      >
+        {title}
+      </Text>
+      <Card padded={false}>{children}</Card>
+    </View>
+  );
+}
+
+function IconWell({
+  children,
+  tone = 'primary',
+}: {
+  children: React.ReactNode;
+  tone?: 'primary' | 'danger';
+}) {
+  const { colors, radius } = useTheme();
+
+  return (
+    <View
+      style={{
+        width: 36,
+        height: 36,
+        borderRadius: radius.sm,
+        backgroundColor: tone === 'danger' ? `${colors.error}22` : colors.primaryLight,
+        alignItems: 'center',
+        justifyContent: 'center',
+      }}
+    >
+      {children}
+    </View>
+  );
+}
+
+function UserAvatar({ name, email }: { name?: string; email?: string }) {
+  const { colors, typography, radius } = useTheme();
+  const initials = getUserInitials(name, email);
+
+  return (
+    <View
+      style={{
+        width: 36,
+        height: 36,
+        borderRadius: radius.full,
+        backgroundColor: colors.primary,
+        alignItems: 'center',
+        justifyContent: 'center',
+      }}
+    >
+      <Text style={[typography.caption, { color: colors.onPrimary, fontFamily: 'Inter-Bold' }]}>
+        {initials}
+      </Text>
+    </View>
+  );
+}
 
 export default function SettingsScreen() {
-  const { theme, toggleTheme, colors, spacing, typography } = useTheme();
+  const { theme, toggleTheme, colors, typography } = useTheme();
   const { user, signOut } = useAuth();
   const { clearAllLinks } = useLinkStore();
   const { clearAllCategories } = useCategoryStore();
   const [showClearModal, setShowClearModal] = useState(false);
   const [showLogoutModal, setShowLogoutModal] = useState(false);
+  const appVersion = Constants.expoConfig?.version ?? '1.0.0';
 
   const handleClearData = async () => {
     try {
@@ -41,85 +118,81 @@ export default function SettingsScreen() {
 
   return (
     <Screen scroll padded>
-      <View style={[styles.section, { marginBottom: spacing.xl }]}>
-        <Text style={[typography.overline, styles.sectionTitle, { color: colors.textSecondary }]}>
-          Conta
-        </Text>
-        <Card padded={false}>
-          <ListRow
-            icon={<User size={22} color={colors.primary} />}
-            title={user?.full_name || 'Usuário'}
-            description={user?.email}
-          />
-          <ListRow
-            icon={<LogOut size={22} color={colors.error} />}
-            title="Sair"
-            description="Encerrar a sessão desta conta"
-            onPress={() => setShowLogoutModal(true)}
-            divider={false}
-          />
-        </Card>
-      </View>
+      <SettingsSection title="Conta">
+        <ListRow
+          icon={<UserAvatar name={user?.full_name} email={user?.email} />}
+          title={user?.full_name || 'Usuário'}
+          description={user?.email}
+        />
+        <ListRow
+          icon={
+            <IconWell tone="danger">
+              <LogOut size={18} color={colors.error} />
+            </IconWell>
+          }
+          title="Sair"
+          description="Encerrar a sessão desta conta"
+          onPress={() => setShowLogoutModal(true)}
+          divider={false}
+        />
+      </SettingsSection>
 
-      <View style={[styles.section, { marginBottom: spacing.xl }]}>
-        <Text style={[typography.overline, styles.sectionTitle, { color: colors.textSecondary }]}>
-          Aparência
-        </Text>
-        <Card padded={false}>
-          <ListRow
-            icon={
-              theme === 'dark' ? (
-                <Moon size={22} color={colors.primary} />
+      <SettingsSection title="Aparência">
+        <ListRow
+          icon={
+            <IconWell>
+              {theme === 'dark' ? (
+                <Moon size={18} color={colors.primary} />
               ) : (
-                <Sun size={22} color={colors.primary} />
-              )
-            }
-            title="Modo escuro"
-            description={theme === 'dark' ? 'Mudar para o modo claro' : 'Mudar para o modo escuro'}
-            trailing={
-              <Switch
-                value={theme === 'dark'}
-                onValueChange={toggleTheme}
-                trackColor={{ false: colors.border, true: colors.primary }}
-                thumbColor="#fff"
-              />
-            }
-            divider={false}
-          />
-        </Card>
-      </View>
+                <Sun size={18} color={colors.primary} />
+              )}
+            </IconWell>
+          }
+          title="Modo escuro"
+          description={theme === 'dark' ? 'Tema escuro ativo' : 'Tema claro ativo'}
+          trailing={
+            <Switch
+              value={theme === 'dark'}
+              onValueChange={toggleTheme}
+              trackColor={{ false: colors.border, true: colors.primary }}
+              thumbColor="#FFFFFF"
+              ios_backgroundColor={colors.border}
+              accessibilityLabel="Modo escuro"
+            />
+          }
+          divider={false}
+        />
+      </SettingsSection>
 
-      <View style={[styles.section, { marginBottom: spacing.xl }]}>
-        <Text style={[typography.overline, styles.sectionTitle, { color: colors.textSecondary }]}>
-          Dados
-        </Text>
-        <Card padded={false}>
-          <ListRow
-            icon={<Trash2 size={22} color={colors.error} />}
-            title="Limpar todos os dados"
-            description="Apagar todos os itens e categorias salvos"
-            onPress={() => setShowClearModal(true)}
-            divider={false}
-          />
-        </Card>
-      </View>
+      <SettingsSection title="Dados">
+        <ListRow
+          icon={
+            <IconWell tone="danger">
+              <Trash2 size={18} color={colors.error} />
+            </IconWell>
+          }
+          title="Limpar todos os dados"
+          description="Apagar todos os itens e categorias salvos"
+          onPress={() => setShowClearModal(true)}
+          divider={false}
+        />
+      </SettingsSection>
 
-      <View style={[styles.section, { marginBottom: spacing.xl }]}>
-        <Text style={[typography.overline, styles.sectionTitle, { color: colors.textSecondary }]}>
-          Sobre
-        </Text>
-        <Card padded={false}>
-          <ListRow
-            icon={<Info size={22} color={colors.primary} />}
-            title="Sobre o Savvy"
-            description="Versão 1.0.0"
-            divider={false}
-          />
-        </Card>
-      </View>
+      <SettingsSection title="Sobre">
+        <ListRow
+          icon={
+            <IconWell>
+              <Info size={18} color={colors.primary} />
+            </IconWell>
+          }
+          title="Sobre o Savvy"
+          description={`Versão ${appVersion}`}
+          divider={false}
+        />
+      </SettingsSection>
 
       <Text style={[typography.micro, styles.footerText, { color: colors.textSecondary }]}>
-        Innovai Hub © 2025
+        Innovai Hub © 2026
       </Text>
 
       <ConfirmationModal
@@ -148,12 +221,8 @@ export default function SettingsScreen() {
 }
 
 const styles = StyleSheet.create({
-  section: {},
-  sectionTitle: {
-    paddingHorizontal: 8,
-    marginBottom: 8,
-  },
   footerText: {
     textAlign: 'center',
+    marginBottom: 8,
   },
 });

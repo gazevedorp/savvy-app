@@ -1,27 +1,17 @@
 import React, { useState } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  Alert,
-  TouchableOpacity,
-  KeyboardAvoidingView,
-  Platform,
-} from 'react-native';
+import { View, Text, StyleSheet, Alert, TouchableOpacity } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useTheme } from '@/context/ThemeContext';
 import { useAuth } from '@/context/AuthContext';
-import Logo from '@/components/ui/Logo';
 import InputField from '@/components/ui/InputField';
 import Button from '@/components/ui/Button';
-import Screen from '@/components/ui/Screen';
-import AppHeader from '@/components/ui/AppHeader';
+import AuthScreen from '@/components/ui/AuthScreen';
 
 export default function ForgotPasswordScreen() {
-  const { colors } = useTheme();
+  const { colors, spacing, typography } = useTheme();
   const { resetPassword } = useAuth();
   const router = useRouter();
-  
+
   const [email, setEmail] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -32,12 +22,12 @@ export default function ForgotPasswordScreen() {
       setError('Email é obrigatório');
       return false;
     }
-    
+
     if (!/\S+@\S+\.\S+/.test(email)) {
       setError('Email inválido');
       return false;
     }
-    
+
     setError('');
     return true;
   };
@@ -47,14 +37,14 @@ export default function ForgotPasswordScreen() {
 
     setLoading(true);
     try {
-      const { error } = await resetPassword(email);
-      
-      if (error) {
-        Alert.alert('Erro', error);
+      const { error: resetError } = await resetPassword(email);
+
+      if (resetError) {
+        Alert.alert('Erro', resetError);
       } else {
         setEmailSent(true);
       }
-    } catch (error) {
+    } catch (caught) {
       Alert.alert('Erro', 'Erro inesperado ao enviar email de recuperação');
     } finally {
       setLoading(false);
@@ -70,142 +60,71 @@ export default function ForgotPasswordScreen() {
 
   if (emailSent) {
     return (
-      <Screen safe>
-        <View style={styles.content}>
-          <View style={styles.logoContainer}>
-            <Logo size="large" />
-          </View>
-
-          <View style={styles.successContainer}>
-            <Text style={[styles.successMessage, { color: colors.textSecondary }]}>
-              Enviamos um link de recuperação de senha para {email}.
-              Verifique sua caixa de entrada e siga as instruções.
-            </Text>
-          </View>
-
-          <View style={styles.buttonContainer}>
-            <Button
-              title="Voltar ao login"
-              onPress={() => router.push('./login' as any)}
-            />
-            
-            <TouchableOpacity 
-              style={styles.resendButton}
-              onPress={() => setEmailSent(false)}
-            >
-              <Text style={[styles.resendText, { color: colors.primary }]}>
-                Enviar novamente
-              </Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </Screen>
+      <AuthScreen
+        title="Email enviado"
+        subtitle={`Enviamos um link de recuperação para ${email}. Confira a caixa de entrada e o spam.`}
+        logoSize="medium"
+        footer={
+          <TouchableOpacity
+            style={[styles.resendButton, { padding: spacing.xs }]}
+            onPress={() => setEmailSent(false)}
+            accessibilityRole="button"
+          >
+            <Text style={[typography.label, { color: colors.primary }]}>Enviar novamente</Text>
+          </TouchableOpacity>
+        }
+      >
+        <Button title="Voltar ao login" onPress={() => router.push('./login' as any)} />
+      </AuthScreen>
     );
   }
 
   return (
-    <Screen safe>
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={styles.keyboardView}
-      >
-        <AppHeader title="Recuperar senha" onBack={() => router.back()} insetTop={false} />
-
-        <View style={styles.content}>
-          <View style={styles.logoContainer}>
-            <Logo size="medium" />
-          </View>
-
-          <View style={styles.formContainer}>
-            <InputField
-              label="Email"
-              value={email}
-              onChangeText={handleEmailChange}
-              error={error}
-              placeholder="seu@email.com"
-              keyboardType="email-address"
-              autoCapitalize="none"
-              autoCorrect={false}
-              required
-            />
-
-            <Button
-              title="Enviar link de recuperação"
-              onPress={handleResetPassword}
-              loading={loading}
-              disabled={loading}
-            />
-
-            <View style={styles.loginContainer}>
-              <Text style={[styles.loginText, { color: colors.textSecondary }]}>
-                Lembrou da senha?{' '}
-              </Text>
-              <TouchableOpacity onPress={() => router.push('./login' as any)}>
-                <Text style={[styles.loginLink, { color: colors.primary }]}>
-                  Faça login
-                </Text>
-              </TouchableOpacity>
-            </View>
-          </View>
+    <AuthScreen
+      title="Recuperar senha"
+      subtitle="Informe seu email e enviaremos um link para redefinir a senha."
+      logoSize="medium"
+      onBack={() => router.back()}
+      headerTitle="Recuperar senha"
+      footer={
+        <View style={styles.loginContainer}>
+          <Text style={[typography.body, { color: colors.textSecondary }]}>Lembrou da senha? </Text>
+          <TouchableOpacity onPress={() => router.push('./login' as any)} accessibilityRole="button">
+            <Text style={[typography.label, { color: colors.primary }]}>Faça login</Text>
+          </TouchableOpacity>
         </View>
-      </KeyboardAvoidingView>
-    </Screen>
+      }
+    >
+      <InputField
+        label="Email"
+        value={email}
+        onChangeText={handleEmailChange}
+        error={error}
+        placeholder="seu@email.com"
+        keyboardType="email-address"
+        autoCapitalize="none"
+        autoCorrect={false}
+        required
+      />
+
+      <Button
+        title="Enviar link de recuperação"
+        onPress={handleResetPassword}
+        loading={loading}
+        disabled={loading}
+      />
+    </AuthScreen>
   );
 }
 
 const styles = StyleSheet.create({
-  keyboardView: {
-    flex: 1,
-  },
-  content: {
-    flex: 1,
-    paddingHorizontal: 24,
-  },
-  logoContainer: {
-    alignItems: 'center',
-    marginTop: 40,
-    marginBottom: 48,
-  },
-  formContainer: {
-    flex: 1,
-  },
   loginContainer: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     justifyContent: 'center',
     alignItems: 'center',
-    marginTop: 24,
-  },
-  loginText: {
-    fontFamily: 'Inter-Regular',
-    fontSize: 14,
-  },
-  loginLink: {
-    fontFamily: 'Inter-Medium',
-    fontSize: 14,
-  },
-  successContainer: {
-    alignItems: 'center',
-    marginTop: 40,
-    marginBottom: 40,
-  },
-  successMessage: {
-    fontFamily: 'Inter-Regular',
-    fontSize: 16,
-    textAlign: 'center',
-    lineHeight: 22,
-  },
-  buttonContainer: {
-    flex: 1,
-    justifyContent: 'flex-end',
-    paddingBottom: 32,
   },
   resendButton: {
     alignSelf: 'center',
-    marginTop: 16,
-    padding: 8,
-  },
-  resendText: {
-    fontFamily: 'Inter-Medium',
-    fontSize: 14,
   },
 });

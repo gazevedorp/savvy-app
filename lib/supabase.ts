@@ -38,6 +38,6 @@ export const supabase = createClient(supabaseUrl || '', supabaseAnonKey || '', {
     storage: storage as any,
     autoRefreshToken: true,
     persistSession: true,
-    detectSessionInUrl: false,
+    detectSessionInUrl: Platform.OS === 'web',
   },
 });
