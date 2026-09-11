@@ -1,8 +1,10 @@
 # Supabase Storage Setup
 
-> Phase D+. Table schema, `links.metadata`, indexes, and table RLS are **not** here — apply [`migrations/20260910_phase_c_supabase_baseline.sql`](./migrations/20260910_phase_c_supabase_baseline.sql) first.
+> Apply [`migrations/20260911_phase_d_atomic_joins_and_storage.sql`](./migrations/20260911_phase_d_atomic_joins_and_storage.sql) after Phase C. That file creates the `savvy-images` bucket and storage policies. This page is the **Dashboard fallback** if the Storage SQL block cannot run, plus a checklist.
 
-## Passo 1: Criar Bucket para Imagens
+Table schema, `links.metadata`, indexes, and table RLS: [`migrations/20260910_phase_c_supabase_baseline.sql`](./migrations/20260910_phase_c_supabase_baseline.sql).
+
+## Remaining for you (if the migration Storage block failed)
 
 ### Via Interface do Supabase (RECOMENDADO)
 1. Vá para **Storage** no painel do Supabase
@@ -36,6 +38,18 @@ CREATE POLICY "Users can upload images" ON storage.objects
 CREATE POLICY "Public can view images" ON storage.objects
   FOR SELECT USING (bucket_id = 'savvy-images');
 
+CREATE POLICY "Users can update own images" ON storage.objects
+  FOR UPDATE
+  TO authenticated
+  USING (
+    bucket_id = 'savvy-images'
+    AND auth.uid()::text = (storage.foldername(name))[1]
+  )
+  WITH CHECK (
+    bucket_id = 'savvy-images'
+    AND auth.uid()::text = (storage.foldername(name))[1]
+  );
+
 -- Política para permitir deletar suas próprias imagens
 CREATE POLICY "Users can delete own images" ON storage.objects
   FOR DELETE USING (
@@ -53,7 +67,7 @@ CREATE POLICY "Users can delete own images" ON storage.objects
 ### 3.2 Verificar as políticas
 1. Clique no bucket **savvy-images**
 2. Vá para a aba **"Policies"**
-3. Confirme que as 3 políticas aparecem como **ENABLED**
+3. Confirme que as 4 políticas aparecem como **ENABLED** (upload, public read, update, delete).
 
 ### 3.3 Testar upload manual
 1. No bucket **savvy-images**, clique em **"Upload file"**

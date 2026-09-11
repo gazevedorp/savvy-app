@@ -15,6 +15,7 @@ import { Link } from '@/types';
 import ConfirmationModal from '@/components/modals/ConfirmationModal';
 import MediaDetailView from '@/components/ui/MediaDetailView';
 import { getTypeLabel, isMediaType } from '@/utils/media';
+import { alertError } from '@/utils/errors';
 
 export default function LinkDetailScreen() {
   const { id } = useLocalSearchParams();
@@ -68,16 +69,25 @@ export default function LinkDetailScreen() {
     }
   };
 
-  const handleToggleRead = () => {
+  const handleToggleRead = async () => {
     if (link && link.id) {
-      updateLink(link.id, { is_read: !link.is_read });
+      try {
+        await updateLink(link.id, { is_read: !link.is_read });
+      } catch (error) {
+        alertError(error, 'Não foi possível atualizar o item.');
+      }
     }
   };
 
-  const handleDeleteLink = () => {
+  const handleDeleteLink = async () => {
     if (link && link.id) {
-      deleteLink(link.id);
-      router.back();
+      try {
+        await deleteLink(link.id);
+        setDeleteModalVisible(false);
+        router.back();
+      } catch (error) {
+        alertError(error, 'Não foi possível excluir o item.');
+      }
     }
   };
 
@@ -100,7 +110,7 @@ export default function LinkDetailScreen() {
     );
   }
 
-  const isLocalImage = link.type === 'image' && link.url.startsWith('file://');
+  const isLocalImage = link.type === 'image';
   const isMedia = isMediaType(link.type);
 
   return (

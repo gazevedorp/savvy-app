@@ -23,6 +23,7 @@ import { formatRelativeTime } from '@/utils/dateUtils';
 import Animated, { FadeIn } from 'react-native-reanimated';
 import { useLinkStore } from '@/store/linkStore';
 import { getLinkSubtitle, getTypeColor, getTypeLabel } from '@/utils/media';
+import { alertError } from '@/utils/errors';
 import Chip from '@/components/ui/Chip';
 
 interface LinkCardProps {
@@ -64,9 +65,13 @@ export default function LinkCard({ link }: LinkCardProps) {
     router.push(`/link/${link.id}`);
   };
 
-  const handleToggleRead = () => {
+  const handleToggleRead = async () => {
     if (!link.id) return;
-    updateLink(link.id, { is_read: !link.is_read });
+    try {
+      await updateLink(link.id, { is_read: !link.is_read });
+    } catch (error) {
+      alertError(error, 'Não foi possível atualizar o item.');
+    }
   };
 
   const typeLabel = getTypeLabel(link.type);

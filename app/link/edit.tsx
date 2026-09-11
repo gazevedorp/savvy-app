@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, StyleSheet, Text, TextInput, ScrollView, TouchableOpacity, Image } from 'react-native';
+import { View, StyleSheet, Text, TextInput, ScrollView, TouchableOpacity, Image, Alert } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useLinkStore } from '@/store/linkStore';
 import { useCategoryStore } from '@/store/categoryStore';
@@ -11,6 +11,8 @@ import { Link, LinkType } from '@/types';
 import CategorySelector from '@/components/ui/CategorySelector';
 import TypeSelector from '@/components/ui/TypeSelector';
 import * as ImagePicker from 'expo-image-picker';
+import { alertError } from '@/utils/errors';
+import { deleteStoredImage, ensureRemoteImageUrl, isUploadableImageUri } from '@/utils/imageUpload';
 
 export default function EditLinkScreen() {
   const { id } = useLocalSearchParams();
@@ -25,7 +27,7 @@ export default function EditLinkScreen() {
   const [selectedType, setSelectedType] = useState<LinkType>('link');
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [imageUri, setImageUri] = useState<string | null>(null); // For image preview
-  const [isLoading, setIsLoading] = useState(false); // Added for consistency, though not heavily used here yet
+  const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
     if (id && typeof id === 'string') {
@@ -36,7 +38,7 @@ export default function EditLinkScreen() {
         setDescription(currentLink.description || '');
         setSelectedType(currentLink.type);
         setSelectedCategories(currentLink.categoryIds || []);
-        if (currentLink.type === 'image' && currentLink.url.startsWith('file://')) {
+        if (currentLink.type === 'image') {
           setImageUri(currentLink.url);
         }
       }
@@ -64,41 +66,62 @@ export default function EditLinkScreen() {
     }
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
+    if (isLoading) return;
     if (id && typeof id === 'string') {
       if (selectedType === 'other' && !title.trim()) {
-        alert('Informe um título para a nota.');
+        Alert.alert('Erro', 'Informe um título para a nota.');
         return;
       }
       if (selectedType !== 'other' && !url.trim()) {
-        alert(selectedType === 'image' ? 'Escolha uma imagem ou informe um URL.' : 'Informe um URL.');
+        Alert.alert('Erro', selectedType === 'image' ? 'Escolha uma imagem ou informe um URL.' : 'Informe um URL.');
         return;
       }
       if (!title.trim() && selectedType !== 'other') {
-          alert('Informe um título.');
+          Alert.alert('Erro', 'Informe um título.');
           return;
       }
 
       let savvyTitle = title.trim();
       if (!savvyTitle) {
-        if (selectedType === 'image' && url.startsWith('file://')) savvyTitle = 'Imagem editada';
+        if (selectedType === 'image' && isUploadableImageUri(url)) savvyTitle = 'Imagem editada';
         else if (selectedType !== 'other') savvyTitle = url;
         else savvyTitle = 'Nota sem título';
       }
 
-      const payload: Partial<Link> = {
-        title: savvyTitle,
-        url: url,
-        description,
-        type: selectedType,
-        categoryIds: selectedCategories,
-      };
-      if (selectedType !== 'music' && selectedType !== 'movie') {
-        payload.metadata = null;
-      }
+      setIsLoading(true);
+      let uploadedUrl: string | null = null;
+      try {
+        let finalUrl = url;
+        let thumbnail: string | undefined;
+        if (selectedType === 'image' && isUploadableImageUri(url)) {
+          uploadedUrl = await ensureRemoteImageUrl(url);
+          finalUrl = uploadedUrl;
+          thumbnail = finalUrl;
+        }
 
-      updateLink(id, payload);
-      router.back();
+        const payload: Partial<Link> = {
+          title: savvyTitle,
+          url: finalUrl,
+          description,
+          type: selectedType,
+          categoryIds: selectedCategories,
+        };
+        if (thumbnail) payload.thumbnail = thumbnail;
+        if (selectedType !== 'music' && selectedType !== 'movie') {
+          payload.metadata = null;
+        }
+
+        await updateLink(id, payload);
+        router.back();
+      } catch (error) {
+        if (uploadedUrl) {
+          await deleteStoredImage(uploadedUrl);
+        }
+        alertError(error, 'Não foi possível salvar. Tente novamente.');
+      } finally {
+        setIsLoading(false);
+      }
     }
   };
 
@@ -108,13 +131,12 @@ export default function EditLinkScreen() {
 
     if (oldType !== newType) {
       // If changing away from 'image' and URL was a local file
-      if (oldType === 'image' && url.startsWith('file://')) {
+      if (oldType === 'image' && isUploadableImageUri(url)) {
         // Decide if URL should be cleared or kept if user switches to 'link' for example
         // For now, let's keep it simple and not auto-clear, user can manually change
       }
       // If changing to 'image' and URL was a web URL
-      else if (newType === 'image' && url && !url.startsWith('file://')) {
-        // If current URL is a web URL, and user switches to image, clear it to prompt picking
+      else if (newType === 'image' && url && !isUploadableImageUri(url)) {
         setUrl('');
         setImageUri(null);
       }
@@ -132,6 +154,7 @@ export default function EditLinkScreen() {
   };
 
   const canSave = () => {
+    if (isLoading) return false;
     if (selectedType === 'other') return !!title.trim();
     return !!url.trim() && !!title.trim();
   };
@@ -167,16 +190,15 @@ export default function EditLinkScreen() {
             >
               <ImageIconLucide size={20} color={colors.primary} style={styles.inputIcon} />
               <Text style={[styles.pickImageButtonText, { color: colors.primary }]}>
-                {imageUri || url.startsWith('file://') ? 'Trocar imagem' : 'Escolher imagem do dispositivo'}
+                {imageUri || url ? 'Trocar imagem' : 'Escolher imagem do dispositivo'}
               </Text>
             </TouchableOpacity>
-            {(imageUri || (selectedType === 'image' && url.startsWith('file://'))) && (
+            {(imageUri || url) && (
               <View style={styles.imagePreviewContainer}>
                 <Image source={{ uri: imageUri || url }} style={styles.imagePreview} resizeMode="contain" />
               </View>
             )}
-            {/* Optionally, show URL input if it's a web image URL */}
-            {selectedType === 'image' && url && !url.startsWith('file://') && (
+            {selectedType === 'image' && url && !isUploadableImageUri(url) && (
                  <View style={[styles.inputContainer, { backgroundColor: colors.card, borderColor: colors.border }]}>
                    <LinkIcon size={20} color={colors.textSecondary} style={styles.inputIcon} />
                    <TextInput style={[styles.input, { color: colors.text }]} placeholder="URL da imagem" placeholderTextColor={colors.textSecondary} value={url} onChangeText={setUrl} autoCapitalize="none" autoCorrect={false} keyboardType="url"/>

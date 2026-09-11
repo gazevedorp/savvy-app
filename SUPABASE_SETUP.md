@@ -44,7 +44,7 @@ O script cria/alinha:
 
 Detalhes: [`migrations/README.md`](./migrations/README.md) e [`DATABASE_SCHEMA.md`](./DATABASE_SCHEMA.md).
 
-Storage de imagens (bucket `savvy-images`) é Phase D — [`SUPABASE_STORAGE_SETUP.md`](./SUPABASE_STORAGE_SETUP.md).
+Storage de imagens e RPC atômico (Phase D): rode [`migrations/20260911_phase_d_atomic_joins_and_storage.sql`](./migrations/20260911_phase_d_atomic_joins_and_storage.sql). Fallback do bucket: [`SUPABASE_STORAGE_SETUP.md`](./SUPABASE_STORAGE_SETUP.md).
 
 `SUPABASE_FIX_ALL.sql` está **deprecated** para schema/RLS; não use como caminho principal.
 

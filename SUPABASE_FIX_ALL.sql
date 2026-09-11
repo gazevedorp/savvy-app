@@ -8,8 +8,9 @@
 -- How to apply:
 --   migrations/README.md
 --
--- Storage bucket + storage.objects policies (Phase D, not Phase C):
---   SUPABASE_STORAGE_SETUP.md
+-- Storage bucket + storage.objects policies:
+--   migrations/20260911_phase_d_atomic_joins_and_storage.sql
+--   (Dashboard fallback: SUPABASE_STORAGE_SETUP.md)
 -- =============================================================================
 
 -- Intentionally empty. Historical copies mixed FK fixes, storage, and

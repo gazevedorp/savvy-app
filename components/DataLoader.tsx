@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useLinkStore } from '@/store/linkStore';
 import { useCategoryStore } from '@/store/categoryStore';
+import { alertError } from '@/utils/errors';
 
 export default function DataLoader({ children }: { children: React.ReactNode }) {
   const { session } = useAuth();
@@ -10,7 +11,6 @@ export default function DataLoader({ children }: { children: React.ReactNode }) 
 
   useEffect(() => {
     if (session?.user) {
-      // Carregar dados quando usuário estiver autenticado
       const loadData = async () => {
         try {
           await Promise.all([
@@ -18,7 +18,7 @@ export default function DataLoader({ children }: { children: React.ReactNode }) 
             fetchLinks(),
           ]);
         } catch (error) {
-          console.error('Error loading data:', error);
+          alertError(error, 'Não foi possível carregar seus dados.');
         }
       };
 
