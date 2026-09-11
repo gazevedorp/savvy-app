@@ -40,7 +40,7 @@ describe('search scopes', () => {
     expect(getSearchHeaderSubtitle('music')).toBe('Catálogo de música');
     expect(getSearchHeaderSubtitle('movie')).toBe('Catálogo de filmes');
     expect(getSearchHeaderSubtitle('saved')).toBe('Salvos, música e filmes');
-    expect(getSearchHeaderSubtitle('saved', 0)).toBe('Salvos, música e filmes');
+    expect(getSearchHeaderSubtitle('saved', 0)).toBe('Nenhum item encontrado');
     expect(getSearchHeaderSubtitle('saved', 1)).toBe('1 item encontrado');
     expect(getSearchHeaderSubtitle('saved', 3)).toBe('3 itens encontrados');
   });

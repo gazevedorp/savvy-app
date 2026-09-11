@@ -28,7 +28,7 @@ export function getSearchHeaderSubtitle(scope: SearchScope, savedCount?: number)
   if (scope === 'music') return 'Catálogo de música';
   if (scope === 'movie') return 'Catálogo de filmes';
   if (typeof savedCount === 'number') {
-    if (savedCount === 0) return 'Salvos, música e filmes';
+    if (savedCount === 0) return 'Nenhum item encontrado';
     if (savedCount === 1) return '1 item encontrado';
     return `${savedCount} itens encontrados`;
   }
