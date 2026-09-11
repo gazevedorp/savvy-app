@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, StyleSheet, Text, Pressable } from 'react-native';
+import { View, StyleSheet, Text, Pressable, Platform } from 'react-native';
 import { Category } from '@/types';
 import { useTheme } from '@/context/ThemeContext';
 import { useRouter } from 'expo-router';
@@ -33,62 +33,70 @@ export default function CategoryCard({
     });
   };
 
+  const card = (
+    <View
+      style={[
+        styles.container,
+        {
+          backgroundColor: colors.card,
+          borderColor: colors.border,
+          borderRadius: radius.lg,
+          padding: spacing.sm,
+        },
+        elevation.sm,
+      ]}
+    >
+      <Pressable
+        style={styles.main}
+        onPress={handleCardPress}
+        onLongPress={() => onOpenActions(category)}
+        delayLongPress={300}
+        accessibilityRole="button"
+        accessibilityLabel={`${category.name}, ${formatCategoryCount(linkCount)}`}
+        accessibilityHint="Toque para filtrar. Mantenha pressionado para editar ou excluir."
+      >
+        <View style={[styles.swatch, { backgroundColor: accent, borderRadius: radius.md }]}>
+          <CategoryIcon name={category.icon} color={onAccent} size={22} />
+        </View>
+
+        <View style={[styles.body, { marginLeft: spacing.sm }]}>
+          <Text style={[typography.heading, { color: colors.text }]} numberOfLines={2}>
+            {category.name}
+          </Text>
+          <Text
+            style={[
+              typography.caption,
+              {
+                color: colors.textSecondary,
+                marginTop: spacing.xxs,
+                fontFamily: 'Inter-Regular',
+              },
+            ]}
+          >
+            {formatCategoryCount(linkCount)}
+          </Text>
+        </View>
+      </Pressable>
+
+      <Pressable
+        onPress={() => onOpenActions(category)}
+        hitSlop={8}
+        accessibilityRole="button"
+        accessibilityLabel={`Ações para ${category.name}`}
+        style={styles.more}
+      >
+        <EllipsisVertical size={18} color={colors.textSecondary} />
+      </Pressable>
+    </View>
+  );
+
+  if (Platform.OS === 'web') {
+    return <View style={{ width }}>{card}</View>;
+  }
+
   return (
     <Animated.View entering={FadeIn.duration(300)} style={{ width }}>
-      <View
-        style={[
-          styles.container,
-          {
-            backgroundColor: colors.card,
-            borderColor: colors.border,
-            borderRadius: radius.lg,
-            padding: spacing.sm,
-          },
-          elevation.sm,
-        ]}
-      >
-        <Pressable
-          style={styles.main}
-          onPress={handleCardPress}
-          onLongPress={() => onOpenActions(category)}
-          delayLongPress={300}
-          accessibilityRole="button"
-          accessibilityLabel={`${category.name}, ${formatCategoryCount(linkCount)}`}
-          accessibilityHint="Toque para filtrar. Mantenha pressionado para editar ou excluir."
-        >
-          <View style={[styles.swatch, { backgroundColor: accent, borderRadius: radius.md }]}>
-            <CategoryIcon name={category.icon} color={onAccent} size={22} />
-          </View>
-
-          <View style={[styles.body, { marginLeft: spacing.sm }]}>
-            <Text style={[typography.heading, { color: colors.text }]} numberOfLines={2}>
-              {category.name}
-            </Text>
-            <Text
-              style={[
-                typography.caption,
-                {
-                  color: colors.textSecondary,
-                  marginTop: spacing.xxs,
-                  fontFamily: 'Inter-Regular',
-                },
-              ]}
-            >
-              {formatCategoryCount(linkCount)}
-            </Text>
-          </View>
-        </Pressable>
-
-        <Pressable
-          onPress={() => onOpenActions(category)}
-          hitSlop={8}
-          accessibilityRole="button"
-          accessibilityLabel={`Ações para ${category.name}`}
-          style={styles.more}
-        >
-          <EllipsisVertical size={18} color={colors.textSecondary} />
-        </Pressable>
-      </View>
+      {card}
     </Animated.View>
   );
 }
