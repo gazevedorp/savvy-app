@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import { Category } from "@/types";
 import { supabase } from '@/lib/supabase';
+import { failWithUserMessage } from '@/utils/errors';
 
 interface CategoryState {
   categories: Category[];
@@ -14,33 +15,33 @@ interface CategoryState {
   editCategory: (id: string, name: string, color?: string) => Promise<void>;
 }
 
-// Default categories with predefined colors
-const DEFAULT_CATEGORIES: Omit<Category, 'user_id'>[] = [
-  {
-    id: "cat-1",
-    name: "Artigos",
-    color: "#0F6E6A",
-    created_at: new Date().toISOString(),
-  },
-  {
-    id: "cat-2",
-    name: "Tecnologia",
-    color: "#FF2D55",
-    created_at: new Date().toISOString(),
-  },
-  {
-    id: "cat-3",
-    name: "Tutoriais",
-    color: "#5856D6",
-    created_at: new Date().toISOString(),
-  },
-  {
-    id: "cat-4",
-    name: "Negócios",
-    color: "#FF9500",
-    created_at: new Date().toISOString(),
-  },
+const DEFAULT_CATEGORIES: Pick<Category, 'name' | 'color'>[] = [
+  { name: "Artigos", color: "#0F6E6A" },
+  { name: "Tecnologia", color: "#FF2D55" },
+  { name: "Tutoriais", color: "#5856D6" },
+  { name: "Negócios", color: "#FF9500" },
 ];
+
+function mapCategory(item: Category): Category {
+  return {
+    id: item.id,
+    name: item.name,
+    color: item.color,
+    icon: item.icon,
+    user_id: item.user_id,
+    created_at: item.created_at,
+  };
+}
+
+async function requireUserId(): Promise<string> {
+  const { data, error } = await supabase.auth.getSession();
+  if (error) throw error;
+  const userId = data.session?.user?.id;
+  if (!userId) {
+    throw new Error('Usuário não autenticado');
+  }
+  return userId;
+}
 
 export const useCategoryStore = create<CategoryState>((set, get) => ({
   categories: [],
@@ -52,9 +53,10 @@ export const useCategoryStore = create<CategoryState>((set, get) => ({
     try {
       const { data: session } = await supabase.auth.getSession();
       if (!session.session?.user) {
-        set({ isLoading: false });
+        set({ categories: [], isLoading: false, error: null });
         return;
       }
+      const userId = session.session.user.id;
 
       const { data, error } = await supabase
         .from('categories')
@@ -63,97 +65,73 @@ export const useCategoryStore = create<CategoryState>((set, get) => ({
 
       if (error) throw error;
 
-      let categoriesToSet: Category[];
+      let categoriesToSet: Category[] = (data || []).map(mapCategory);
 
-      if (data && data.length > 0) {
-        categoriesToSet = data.map(item => ({
-          id: item.id,
-          name: item.name,
-          color: item.color,
-          icon: item.icon,
-          user_id: item.user_id,
-          created_at: item.created_at,
-        }));
-      } else {
-        // Se não há categorias, criar as padrões
-        categoriesToSet = [];
+      if (categoriesToSet.length === 0) {
+        const seeded: Category[] = [];
         for (const defaultCat of DEFAULT_CATEGORIES) {
-          const newCategory = {
-            ...defaultCat,
-            user_id: session.session.user.id,
-            created_at: defaultCat.created_at,
-          };
-
-          const { error: insertError } = await supabase
+          const { data: inserted, error: insertError } = await supabase
             .from('categories')
-            .insert([newCategory]);
+            .insert({
+              name: defaultCat.name,
+              color: defaultCat.color,
+              user_id: userId,
+            })
+            .select()
+            .single();
 
-          if (!insertError) {
-            categoriesToSet.push({
-              ...defaultCat,
-              user_id: session.session.user.id,
-            });
-          }
+          if (insertError) throw insertError;
+          if (inserted) seeded.push(mapCategory(inserted));
         }
+        categoriesToSet = seeded;
       }
 
-      set({ categories: categoriesToSet, isLoading: false });
+      set({ categories: categoriesToSet, isLoading: false, error: null });
     } catch (error) {
-      console.error('Error fetching categories:', error);
-      set({ error: 'Erro ao carregar categorias', isLoading: false });
+      const appError = failWithUserMessage(error, 'Não foi possível carregar as categorias.');
+      set({ error: appError.userMessage, isLoading: false });
+      throw appError;
     }
   },
 
   addCategory: async (categoryData: Partial<Category>) => {
     set({ isLoading: true, error: null });
-    
-    try {
-      const { data: session } = await supabase.auth.getSession();
-      if (!session.session?.user) {
-        throw new Error('Usuário não autenticado');
-      }
 
-      // Remove id since Supabase will auto-generate
-      const newCategory = {
-        name: categoryData.name || "Nova categoria",
-        color: categoryData.color || "#0F6E6A",
-        icon: categoryData.icon,
-        user_id: session.session.user.id,
-      };
+    try {
+      const userId = await requireUserId();
 
       const { data, error } = await supabase
         .from('categories')
-        .insert([newCategory])
+        .insert({
+          name: categoryData.name || "Nova categoria",
+          color: categoryData.color || "#0F6E6A",
+          icon: categoryData.icon,
+          user_id: userId,
+        })
         .select()
         .single();
 
       if (error) throw error;
 
-      const category: Category = {
-        id: data.id,
-        name: data.name,
-        color: data.color,
-        icon: data.icon,
-        user_id: data.user_id,
-        created_at: data.created_at,
-      };
+      const category = mapCategory(data);
 
-      set(state => ({
+      set((state) => ({
         categories: [category, ...state.categories],
-        isLoading: false
+        isLoading: false,
+        error: null,
       }));
 
       return category;
     } catch (error) {
-      console.error('Error adding category:', error);
-      set({ error: 'Erro ao adicionar categoria', isLoading: false });
-      throw error;
+      const appError = failWithUserMessage(error, 'Não foi possível adicionar a categoria.');
+      set({ error: appError.userMessage, isLoading: false });
+      throw appError;
     }
   },
 
   updateCategory: async (id: string, data: Partial<Category>) => {
     set({ isLoading: true, error: null });
-    
+
     try {
       const { error } = await supabase
         .from('categories')
@@ -166,15 +144,17 @@ export const useCategoryStore = create<CategoryState>((set, get) => ({
 
       if (error) throw error;
 
-      set(state => ({
-        categories: state.categories.map(category =>
+      set((state) => ({
+        categories: state.categories.map((category) =>
           category.id === id ? { ...category, ...data } : category
         ),
-        isLoading: false
+        isLoading: false,
+        error: null,
       }));
     } catch (error) {
-      console.error('Error updating category:', error);
-      set({ error: 'Erro ao atualizar categoria', isLoading: false });
+      const appError = failWithUserMessage(error, 'Não foi possível atualizar a categoria.');
+      set({ error: appError.userMessage, isLoading: false });
+      throw appError;
     }
   },
 
@@ -186,45 +166,36 @@ export const useCategoryStore = create<CategoryState>((set, get) => ({
 
   deleteCategory: async (id: string) => {
     set({ isLoading: true, error: null });
-    
-    try {
-      const { error } = await supabase
-        .from('categories')
-        .delete()
-        .eq('id', id);
 
+    try {
+      const { error } = await supabase.from('categories').delete().eq('id', id);
       if (error) throw error;
 
-      set(state => ({
-        categories: state.categories.filter(category => category.id !== id),
-        isLoading: false
+      set((state) => ({
+        categories: state.categories.filter((category) => category.id !== id),
+        isLoading: false,
+        error: null,
       }));
     } catch (error) {
-      console.error('Error deleting category:', error);
-      set({ error: 'Erro ao deletar categoria', isLoading: false });
+      const appError = failWithUserMessage(error, 'Não foi possível excluir a categoria.');
+      set({ error: appError.userMessage, isLoading: false });
+      throw appError;
     }
   },
 
   clearAllCategories: async () => {
     set({ isLoading: true, error: null });
-    
+
     try {
-      const { data: session } = await supabase.auth.getSession();
-      if (!session.session?.user) {
-        throw new Error('Usuário não autenticado');
-      }
-
-      const { error } = await supabase
-        .from('categories')
-        .delete()
-        .eq('user_id', session.session.user.id);
-
+      const userId = await requireUserId();
+      const { error } = await supabase.from('categories').delete().eq('user_id', userId);
       if (error) throw error;
 
-      set({ categories: [], isLoading: false });
+      set({ categories: [], isLoading: false, error: null });
     } catch (error) {
-      console.error('Error clearing categories:', error);
-      set({ error: 'Erro ao limpar categorias', isLoading: false });
+      const appError = failWithUserMessage(error, 'Não foi possível limpar as categorias.');
+      set({ error: appError.userMessage, isLoading: false });
+      throw appError;
     }
   },
 }));

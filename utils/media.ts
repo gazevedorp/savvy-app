@@ -1,4 +1,5 @@
 import { Link, LinkType, MediaMetadata } from '@/types';
+import { isUploadableImageUri } from '@/utils/imageUri';
 
 export const MEDIA_TYPES: LinkType[] = ['music', 'movie'];
 
@@ -46,7 +47,7 @@ export function getTypeColor(type: LinkType | string | undefined, fallback: stri
 
 export function getLinkHostname(url?: string | null): string | undefined {
   if (!url) return undefined;
-  if (url.startsWith('file://')) return undefined;
+  if (isUploadableImageUri(url)) return undefined;
   try {
     return new URL(url).hostname.replace(/^www\./, '');
   } catch {
@@ -68,7 +69,7 @@ export function getLinkSubtitle(link: Link): string {
     return link.description?.trim() || 'Nota';
   }
 
-  if (link.type === 'image' && link.url?.startsWith('file://')) {
+  if (link.type === 'image' && isUploadableImageUri(link.url)) {
     return 'Imagem do dispositivo';
   }
 

@@ -14,7 +14,8 @@ import FAB from "@/components/ui/FAB";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Category } from "@/types";
 import DeleteCategoryOptionsModal from "@/components/modals/DeleteCategoryOptionsModal";
-import CategoryActionsModal from "@/components/modals/CategoryActionsModal"; // Import the new modal
+import CategoryActionsModal from "@/components/modals/CategoryActionsModal";
+import { alertError } from "@/utils/errors";
 
 export default function CategoriesScreen() {
   const {
@@ -50,7 +51,7 @@ export default function CategoriesScreen() {
   const cardWidth = (width - (32 + (numColumns - 1) * 16)) / numColumns;
 
   useEffect(() => {
-    fetchCategories();
+    fetchCategories().catch(() => {});
   }, [fetchCategories]);
 
   const getCategoryLinkCount = (categoryId: string) => {
@@ -110,13 +111,12 @@ export default function CategoriesScreen() {
   const handleDeleteCategoryOnly = async () => {
     if (!deletingCategory || !deletingCategory.id) return;
     try {
-      await removeCategoryFromAssociatedLinks(deletingCategory.id);
       await deleteCategory(deletingCategory.id);
-      // fetchCategories(); // Store updates should trigger re-render, but explicit fetch can be a fallback
+      await removeCategoryFromAssociatedLinks(deletingCategory.id);
+      handleCloseDeleteModal();
     } catch (error) {
-      console.error("Error deleting category only:", error);
+      alertError(error, "Não foi possível excluir a categoria.");
     }
-    handleCloseDeleteModal();
   };
 
   const handleDeleteCategoryAndLinks = async () => {
@@ -124,11 +124,10 @@ export default function CategoriesScreen() {
     try {
       await deleteLinksAssociatedWithCategory(deletingCategory.id);
       await deleteCategory(deletingCategory.id);
-      // fetchCategories(); // Store updates should trigger re-render
+      handleCloseDeleteModal();
     } catch (error) {
-      console.error("Error deleting category and links:", error);
+      alertError(error, "Não foi possível excluir a categoria e os itens.");
     }
-    handleCloseDeleteModal();
   };
 
   const handleSaveCategory = async (data: {
@@ -146,12 +145,10 @@ export default function CategoriesScreen() {
           icon: data.icon,
         });
       }
-      // fetchCategories(); // Store updates should trigger re-render
+      handleCloseAddEditModal();
     } catch (error) {
-      console.error("Failed to save category:", error);
-      // Optionally, show an error message to the user
+      alertError(error, "Não foi possível salvar a categoria.");
     }
-    handleCloseAddEditModal();
   };
 
   const renderItem = ({ item }: { item: Category }) => (

@@ -26,12 +26,13 @@ import TypeSelector from "@/components/ui/TypeSelector";
 import { detectLinkType, extractMetadata } from "@/utils/linkParser";
 import Animated, { FadeIn } from "react-native-reanimated";
 import * as ImagePicker from "expo-image-picker";
-import { supabase } from "@/lib/supabase";
 import MediaSearchPicker from "@/components/ui/MediaSearchPicker";
 import { MediaItem, mediaItemToLink } from "@/utils/itunes";
 import { isMediaType } from "@/utils/media";
 import { MediaMetadata } from "@/types";
 import { resolveCreateType } from "@/utils/home";
+import { alertError } from "@/utils/errors";
+import { deleteStoredImage, ensureRemoteImageUrl, isUploadableImageUri } from "@/utils/imageUpload";
 
 export default function ShareScreen() {
   const { colors } = useTheme();
@@ -54,117 +55,6 @@ export default function ShareScreen() {
   const [mediaMetadata, setMediaMetadata] = useState<MediaMetadata | null>(null);
   const [thumbnail, setThumbnail] = useState<string | undefined>(undefined);
 
-  // Function to upload image to Supabase Storage
-  const uploadImageToSupabase = async (uri: string): Promise<string | null> => {
-    try {
-      // First, check current session
-      let { data: session, error: sessionError } = await supabase.auth.getSession();
-      
-      if (sessionError) {
-        console.error('Session error:', sessionError);
-        throw new Error('Session error: ' + sessionError.message);
-      }
-      
-      if (!session.session?.user) {
-        console.error('No user session found');
-        // Try to refresh session
-        const { data: refreshData, error: refreshError } = await supabase.auth.refreshSession();
-        if (refreshError || !refreshData.session?.user) {
-          throw new Error('User not authenticated');
-        }
-        session = refreshData;
-      }
-
-      console.log('Starting upload for URI:', uri);
-      console.log('User ID:', session.session!.user.id);
-      console.log('Session expires at:', session.session!.expires_at);
-
-      // Test Supabase connection first
-      const { data: testData, error: testError } = await supabase
-        .from('links')
-        .select('id')
-        .limit(1);
-      
-      if (testError) {
-        console.error('Supabase connection test failed:', testError);
-        throw new Error('Supabase connection failed: ' + testError.message);
-      }
-
-      console.log('Supabase connection test successful');
-
-      // Create file path
-      const fileExt = uri.split('.').pop()?.toLowerCase() || 'jpg';
-      const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
-      const filePath = `${session.session!.user.id}/${fileName}`;
-
-      console.log('File path:', filePath);
-
-      // Read the file as a blob
-      const response = await fetch(uri);
-      if (!response.ok) {
-        throw new Error(`Failed to fetch image: ${response.status}`);
-      }
-      
-      const blob = await response.blob();
-      console.log('Blob size:', blob.size);
-      console.log('Blob type:', blob.type);
-
-      // Test storage bucket access
-      const { data: buckets, error: bucketsError } = await supabase.storage.listBuckets();
-      console.log('Available buckets:', buckets?.map(b => b.name));
-      
-      if (bucketsError) {
-        console.error('Bucket list error:', bucketsError);
-      }
-
-      // Upload to Supabase Storage with retry
-      let uploadAttempts = 0;
-      const maxAttempts = 3;
-      
-      while (uploadAttempts < maxAttempts) {
-        try {
-          uploadAttempts++;
-          console.log(`Upload attempt ${uploadAttempts}/${maxAttempts}`);
-          
-          const { data, error } = await supabase.storage
-            .from('savvy-images')
-            .upload(filePath, blob, {
-              contentType: blob.type || `image/${fileExt}`,
-              upsert: false,
-            });
-
-          if (error) {
-            console.error(`Upload error (attempt ${uploadAttempts}):`, error);
-            if (uploadAttempts === maxAttempts) throw error;
-            // Wait 1 second before retry
-            await new Promise(resolve => setTimeout(resolve, 1000));
-            continue;
-          }
-
-          console.log('Upload successful:', data);
-
-          // Get the public URL
-          const { data: urlData } = supabase.storage
-            .from('savvy-images')
-            .getPublicUrl(filePath);
-
-          console.log('Public URL:', urlData.publicUrl);
-          return urlData.publicUrl;
-        } catch (attemptError) {
-          console.error(`Attempt ${uploadAttempts} failed:`, attemptError);
-          if (uploadAttempts === maxAttempts) throw attemptError;
-        }
-      }
-
-      return null;
-    } catch (error) {
-      console.error('Error uploading image:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
-      Alert.alert('Erro', `Falha ao enviar a imagem: ${errorMessage}`);
-      return null;
-    }
-  };
-
   useEffect(() => {
     // Fetch categories when the screen mounts
     fetchCategoriesFromStore();
@@ -183,8 +73,9 @@ export default function ShareScreen() {
       const sharedUrl = String(params.url);
       setUrl(sharedUrl);
 
-      if (sharedUrl.startsWith("file://")) {
+      if (sharedUrl.startsWith("file://") || isUploadableImageUri(sharedUrl)) {
         // If it's a local file URI, assume it's an image
+        setSelectedType("image");
         setSelectedType("image");
         setImageUri(sharedUrl);
         setTitle((prevTitle) => prevTitle || "Shared Image");
@@ -198,7 +89,7 @@ export default function ShareScreen() {
 
   const fetchLinkMetadata = async (linkUrl: string) => {
     // Skip for local file URIs, or if already fetched/no URL
-    if (linkUrl.startsWith("file://")) {
+    if (isUploadableImageUri(linkUrl)) {
       setIsMetadataFetched(true);
       return;
     }
@@ -291,21 +182,17 @@ export default function ShareScreen() {
     }
 
     setIsLoading(true);
+    let uploadedUrl: string | null = null;
 
     try {
       let finalUrl = url;
       let finalThumbnail = thumbnail || null;
+      const localImage = imageUri || url;
 
-      // If it's an image type and we have a local URI, upload to Supabase
-      if (selectedType === "image" && imageUri && imageUri.startsWith("file://")) {
-        const uploadedUrl = await uploadImageToSupabase(imageUri);
-        if (uploadedUrl) {
-          finalUrl = uploadedUrl;
-          finalThumbnail = uploadedUrl;
-        } else {
-          setIsLoading(false);
-          return; // Upload failed, don't proceed
-        }
+      if (selectedType === "image" && isUploadableImageUri(localImage)) {
+        uploadedUrl = await ensureRemoteImageUrl(localImage);
+        finalUrl = uploadedUrl;
+        finalThumbnail = finalUrl;
       }
 
       let savvyTitle = title.trim();
@@ -332,8 +219,10 @@ export default function ShareScreen() {
       await addLink(newLink);
       router.back();
     } catch (error) {
-      console.error('Error saving link:', error);
-      Alert.alert('Erro', 'Não foi possível salvar. Tente novamente.');
+      if (uploadedUrl) {
+        await deleteStoredImage(uploadedUrl);
+      }
+      alertError(error, "Não foi possível salvar. Tente novamente.");
     } finally {
       setIsLoading(false);
     }
@@ -365,14 +254,14 @@ export default function ShareScreen() {
       setThumbnail(undefined);
 
       // If changing away from 'image' and URL was a local file
-      if (oldType === "image" && url.startsWith("file://")) {
+      if (oldType === "image" && isUploadableImageUri(url)) {
         setUrl("");
         setImageUri(null);
         if (title === "My Image" || title === "Shared Image") setTitle(""); // Clear default image titles
         // setDescription(''); // Keep description if user entered it
       }
       // If changing to 'image' and URL was a web URL
-      else if (newType === "image" && url && !url.startsWith("file://")) {
+      else if (newType === "image" && url && !isUploadableImageUri(url)) {
         setUrl(""); // Clear web URL to prompt for picking
         setImageUri(null);
         setTitle(""); // Clear title from web metadata
@@ -391,7 +280,7 @@ export default function ShareScreen() {
         newType !== "image" &&
         !isMediaType(newType) &&
         url &&
-        !url.startsWith("file://")
+        !isUploadableImageUri(url)
       ) {
         fetchLinkMetadata(url);
       }

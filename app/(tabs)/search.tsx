@@ -20,6 +20,7 @@ import MediaSearchResultCard from '@/components/ui/MediaSearchResultCard';
 import { useRouter } from 'expo-router';
 import FilterBar from '@/components/ui/FilterBar';
 import Screen from '@/components/ui/Screen';
+import { toUserMessage } from '@/utils/errors';
 
 type SearchScope = 'saved' | 'music' | 'movie';
 
@@ -110,8 +111,8 @@ export default function SearchScreen() {
         if (saved.id) {
           router.push(`/link/${saved.id}`);
         }
-      } catch {
-        Alert.alert('Erro', 'Não foi possível salvar. Faça login e tente de novo.');
+      } catch (error) {
+        Alert.alert('Erro', toUserMessage(error, 'Não foi possível salvar. Tente de novo.'));
       } finally {
         setSavingId(null);
       }

@@ -10,6 +10,7 @@ import { useState } from 'react';
 import Screen from '@/components/ui/Screen';
 import Card from '@/components/ui/Card';
 import ListRow from '@/components/ui/ListRow';
+import { alertError } from '@/utils/errors';
 
 export default function SettingsScreen() {
   const { theme, toggleTheme, colors, spacing, typography } = useTheme();
@@ -19,10 +20,14 @@ export default function SettingsScreen() {
   const [showClearModal, setShowClearModal] = useState(false);
   const [showLogoutModal, setShowLogoutModal] = useState(false);
 
-  const handleClearData = () => {
-    clearAllLinks();
-    clearAllCategories();
-    setShowClearModal(false);
+  const handleClearData = async () => {
+    try {
+      await clearAllLinks();
+      await clearAllCategories();
+      setShowClearModal(false);
+    } catch (error) {
+      alertError(error, 'Não foi possível limpar os dados.');
+    }
   };
 
   const handleLogout = async () => {

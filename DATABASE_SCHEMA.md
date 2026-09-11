@@ -1,6 +1,6 @@
 # Schemas das Tabelas do Supabase
 
-**Apply path (Phase C):** run [`migrations/20260910_phase_c_supabase_baseline.sql`](./migrations/20260910_phase_c_supabase_baseline.sql) in the SQL Editor. That file is the single source of truth for tables, `links.metadata`, indexes, type CHECK, FKs, and RLS. This document describes the resulting schema.
+**Apply path:** run Phase C then Phase D in [`migrations/`](./migrations/README.md). This document describes the resulting schema.
 
 See [`migrations/README.md`](./migrations/README.md) for how to apply and what not to run instead.
 
@@ -65,11 +65,13 @@ Written and read by `store/linkStore.ts`. Matches `MediaMetadata` in `types/inde
 }
 ```
 
-After Phase C, the JSONB column is the primary path. AsyncStorage (`utils/mediaCache.ts`) only gap-fills rows that still lack the column (pre-migration DBs). Removing that dual-write is Phase D.
+After Phase D, `links.metadata` JSONB is the only source of truth. A one-shot import copies leftover AsyncStorage cache into Postgres on the next fetch, then **deletes the device cache** (failed updates and orphan keys are dropped). Dual-write is gone.
+
+Atomic writes go through RPC `save_link_with_categories` (see Phase D migration): the link row and optional `link_categories` rewrite commit together. Toggle-read omits `category_ids` so joins are left alone.
 
 ### Legacy `type` values
 
-The migration remaps before adding the CHECK:
+The Phase C migration remaps before adding the CHECK:
 
 | Old (docs / early drafts) | New |
 | --- | --- |
@@ -89,8 +91,10 @@ The migration remaps before adding the CHECK:
 
 Unique `(link_id, category_id)`. RLS: owner-only (including UPDATE). Indexes on `user_id`, `link_id`, `category_id`.
 
-Atomic rewrite of this join table is Phase D — not in the baseline.
+`ON DELETE CASCADE` from both `links` and `categories` — deleting a link or category removes join rows. Deleting a category does **not** delete the links themselves (the app offers that as a separate confirm).
+
+Writes: `public.save_link_with_categories(p_payload jsonb)` replaces joins when the payload includes `category_ids` (empty array clears). GRANT: `authenticated` only.
 
 ## 4. Storage
 
-Image bucket + storage RLS are **not** part of Phase C. See [`SUPABASE_STORAGE_SETUP.md`](./SUPABASE_STORAGE_SETUP.md).
+Image files live in the public bucket `savvy-images` (`{user_id}/{timestamp}-{rand}.ext`). The app stores the **public URL** on `links.url` (and `thumbnail`). Apply [`migrations/20260911_phase_d_atomic_joins_and_storage.sql`](./migrations/20260911_phase_d_atomic_joins_and_storage.sql). Dashboard fallback: [`SUPABASE_STORAGE_SETUP.md`](./SUPABASE_STORAGE_SETUP.md).

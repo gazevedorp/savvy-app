@@ -129,7 +129,14 @@ Aplique o SQL versionado no SQL Editor — **não** use os dumps antigos em `SUP
 
 Isso alinha produção com o app: `links.metadata` JSONB, tipos `link|video|image|music|movie|other`, índices `(user_id, created_at)` / `(user_id, is_read)` / GIN em `metadata`, e RLS owner-only. Guia curto: [`migrations/README.md`](./migrations/README.md). Schema descrito em [`DATABASE_SCHEMA.md`](./DATABASE_SCHEMA.md).
 
-Depois da coluna existir, o store grava/lê `metadata` no Supabase. AsyncStorage só preenche buracos em bancos ainda sem a coluna (remoção completa do dual-write = Phase D).
+Depois da coluna existir, o store grava/lê `metadata` só no Supabase. AsyncStorage não é mais fonte de verdade (Phase D importa leftovers uma vez e apaga o cache).
+
+**Phase D** (obrigatório para categorias atômicas e upload de imagem):
+
+[`migrations/20260911_phase_d_atomic_joins_and_storage.sql`](./migrations/20260911_phase_d_atomic_joins_and_storage.sql)
+
+- RPC `save_link_with_categories` — link + `link_categories` na mesma transação
+- Bucket público `savvy-images` + políticas. Se o bloco Storage falhar no SQL Editor, complete no Dashboard: [`SUPABASE_STORAGE_SETUP.md`](./SUPABASE_STORAGE_SETUP.md)
 
 ## 📁 Estrutura do Projeto
 
