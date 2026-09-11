@@ -1,8 +1,8 @@
 import React from 'react';
-import { View, StyleSheet, Text, ScrollView, TouchableOpacity } from 'react-native';
+import { View, StyleSheet, Text } from 'react-native';
 import { Category } from '@/types';
 import { useTheme } from '@/context/ThemeContext';
-import { Check } from 'lucide-react-native';
+import Chip from '@/components/ui/Chip';
 
 interface CategorySelectorProps {
   categories: Category[];
@@ -15,51 +15,35 @@ export default function CategorySelector({
   selectedCategories,
   onSelectCategory,
 }: CategorySelectorProps) {
-  const { colors } = useTheme();
+  const { colors, spacing, typography } = useTheme();
 
   if (categories.length === 0) {
     return (
-      <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
+      <Text
+        style={[
+          typography.caption,
+          { color: colors.textSecondary, fontFamily: 'Inter-Regular', marginBottom: spacing.lg },
+        ]}
+      >
         Nenhuma categoria disponível
       </Text>
     );
   }
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { marginBottom: spacing.md, gap: spacing.xs }]}>
       {categories.map((category) => {
         const isSelected = category.id ? selectedCategories.includes(category.id) : false;
-        
         return (
-          <TouchableOpacity
+          <Chip
             key={category.id}
-            style={[
-              styles.categoryItem,
-              { 
-                backgroundColor: isSelected ? category.color + '20' : colors.card,
-                borderColor: isSelected ? category.color : colors.border,
-              }
-            ]}
+            label={category.name}
+            selected={isSelected}
+            tint={category.color}
             onPress={() => {
-              if (category.id) {
-                onSelectCategory(category.id);
-              }
+              if (category.id) onSelectCategory(category.id);
             }}
-            disabled={!category.id}
-          >
-            <Text 
-              style={[
-                styles.categoryName,
-                { color: isSelected ? category.color : colors.text }
-              ]}
-            >
-              {category.name}
-            </Text>
-            
-            {isSelected && (
-              <Check size={16} color={category.color} />
-            )}
-          </TouchableOpacity>
+          />
         );
       })}
     </View>
@@ -70,26 +54,5 @@ const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    marginBottom: 24,
-  },
-  categoryItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 16,
-    marginRight: 8,
-    marginBottom: 8,
-    borderWidth: 1,
-  },
-  categoryName: {
-    fontFamily: 'Inter-Medium',
-    fontSize: 12,
-    marginRight: 4,
-  },
-  emptyText: {
-    fontFamily: 'Inter-Regular',
-    fontSize: 16,
-    marginBottom: 24,
   },
 });

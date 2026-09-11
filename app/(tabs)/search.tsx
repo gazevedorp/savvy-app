@@ -1,11 +1,10 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   View,
   StyleSheet,
   FlatList,
   TextInput,
   ActivityIndicator,
-  Alert,
   Text,
 } from 'react-native';
 import { useLinkStore } from '@/store/linkStore';
@@ -20,9 +19,17 @@ import MediaSearchResultCard from '@/components/ui/MediaSearchResultCard';
 import { useRouter } from 'expo-router';
 import FilterBar from '@/components/ui/FilterBar';
 import Screen from '@/components/ui/Screen';
-import { toUserMessage } from '@/utils/errors';
-
-type SearchScope = 'saved' | 'music' | 'movie';
+import HomeHeader from '@/components/ui/HomeHeader';
+import {
+  SEARCH_SCOPE_OPTIONS,
+  SearchScope,
+  filterSavedLinks,
+  getSearchEmptyCopy,
+  getSearchHeaderSubtitle,
+  getSearchPlaceholder,
+  isSearchScope,
+} from '@/utils/search';
+import { alertError } from '@/utils/errors';
 
 export default function SearchScreen() {
   const { colors, spacing, radius, typography } = useTheme();
@@ -30,31 +37,15 @@ export default function SearchScreen() {
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState('');
   const [scope, setScope] = useState<SearchScope>('saved');
-  const [savedResults, setSavedResults] = useState<Link[]>([]);
   const [mediaResults, setMediaResults] = useState<MediaItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [savingId, setSavingId] = useState<string | null>(null);
   const [mediaError, setMediaError] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (scope !== 'saved') return;
-
-    if (searchQuery.trim() === '') {
-      setSavedResults([]);
-      return;
-    }
-
-    const q = searchQuery.toLowerCase();
-    const filteredByText = links.filter(
-      (link) =>
-        link.title.toLowerCase().includes(q) ||
-        link.url.toLowerCase().includes(q) ||
-        (link.description && link.description.toLowerCase().includes(q)) ||
-        (link.metadata?.artistName && link.metadata.artistName.toLowerCase().includes(q))
-    );
-
-    setSavedResults(filteredByText);
-  }, [searchQuery, links, scope]);
+  const savedResults = useMemo(
+    () => (scope === 'saved' ? filterSavedLinks(links, searchQuery) : []),
+    [links, searchQuery, scope]
+  );
 
   useEffect(() => {
     if (scope === 'saved') {
@@ -79,7 +70,9 @@ export default function SearchScreen() {
         const items = await searchMedia(scope as MediaKind, trimmed);
         if (!cancelled) {
           setMediaResults(items);
-          setMediaError(items.length === 0 ? 'Nenhum resultado real encontrado para essa busca.' : null);
+          setMediaError(
+            items.length === 0 ? 'Nenhum resultado real encontrado para essa busca.' : null
+          );
         }
       } catch {
         if (!cancelled) {
@@ -112,7 +105,7 @@ export default function SearchScreen() {
           router.push(`/link/${saved.id}`);
         }
       } catch (error) {
-        Alert.alert('Erro', toUserMessage(error, 'Não foi possível salvar. Tente de novo.'));
+        alertError(error, 'Não foi possível salvar. Faça login e tente de novo.');
       } finally {
         setSavingId(null);
       }
@@ -120,88 +113,84 @@ export default function SearchScreen() {
     [addLink, links, router]
   );
 
-  const clearSearch = () => {
-    setSearchQuery('');
-  };
+  const emptyCopy = getSearchEmptyCopy({
+    scope,
+    query: searchQuery,
+    error: scope === 'saved' ? null : mediaError,
+  });
 
-  const placeholder =
-    scope === 'music'
-      ? 'Buscar faixas e álbuns reais...'
-      : scope === 'movie'
-        ? 'Buscar filmes reais...'
-        : 'Buscar links salvos...';
+  const headerSubtitle =
+    scope === 'saved' && searchQuery.trim()
+      ? getSearchHeaderSubtitle('saved', savedResults.length)
+      : getSearchHeaderSubtitle(scope);
+
+  const listPadding = { padding: spacing.md, paddingBottom: 100 };
 
   const renderSaved = ({ item }: { item: Link }) => <LinkCard link={item} />;
 
-  const emptySaved =
-    searchQuery.length > 0 ? (
-      <EmptyState
-        title="Nenhum resultado"
-        description={`Nenhum link salvo corresponde a "${searchQuery}"`}
-        icon="Search"
-      />
-    ) : (
-      <EmptyState
-        title="Buscar nos seus Savvys"
-        description="Digite para filtrar links salvos, ou troque para Música / Filmes para consultar a API."
-        icon="Search"
-      />
-    );
+  const showSavedEmpty = scope === 'saved' && savedResults.length === 0;
+  const showMediaIdle =
+    scope !== 'saved' &&
+    !loading &&
+    (mediaError || searchQuery.trim().length < 2 || mediaResults.length === 0);
 
   return (
     <Screen>
+      <HomeHeader title="Buscar" subtitle={headerSubtitle} />
+
       <View
         style={[
           styles.searchContainer,
           {
             backgroundColor: colors.card,
             borderColor: colors.border,
-            borderRadius: radius.sm,
+            borderRadius: radius.md,
             marginHorizontal: spacing.md,
-            marginTop: spacing.md,
+            marginTop: spacing.xs,
             marginBottom: spacing.xs,
-            paddingHorizontal: spacing.xs,
-            paddingVertical: spacing.xxs + 2,
+            paddingHorizontal: spacing.sm,
           },
         ]}
       >
-        <SearchIcon size={20} color={colors.textSecondary} />
+        <SearchIcon size={18} color={colors.textSecondary} />
         <TextInput
-          style={[styles.searchInput, typography.label, { color: colors.text, fontFamily: 'Inter-Regular' }]}
-          placeholder={placeholder}
+          style={[
+            styles.searchInput,
+            typography.label,
+            { color: colors.text, fontFamily: 'Inter-Regular' },
+          ]}
+          placeholder={getSearchPlaceholder(scope)}
           placeholderTextColor={colors.textSecondary}
           value={searchQuery}
           onChangeText={setSearchQuery}
           autoCapitalize="none"
           autoCorrect={false}
+          accessibilityLabel="Campo de busca"
         />
         {searchQuery.length > 0 && (
-          <TouchableOpacity onPress={clearSearch}>
-            <X size={20} color={colors.textSecondary} />
+          <TouchableOpacity onPress={() => setSearchQuery('')} accessibilityLabel="Limpar busca">
+            <X size={18} color={colors.textSecondary} />
           </TouchableOpacity>
         )}
       </View>
 
       <FilterBar
-        options={[
-          { id: 'saved', label: 'Salvos' },
-          { id: 'music', label: 'Música' },
-          { id: 'movie', label: 'Filmes' },
-        ]}
+        options={[...SEARCH_SCOPE_OPTIONS]}
         activeFilter={scope}
-        onFilterChange={(id) => setScope(id as SearchScope)}
-        bordered
+        onFilterChange={(id) => {
+          if (isSearchScope(id)) setScope(id);
+        }}
       />
 
       {scope === 'saved' ? (
-        searchQuery.length === 0 || savedResults.length === 0 ? (
-          emptySaved
+        showSavedEmpty ? (
+          <EmptyState title={emptyCopy.title} description={emptyCopy.description} icon="Search" />
         ) : (
           <FlatList
             data={savedResults}
             renderItem={renderSaved}
             keyExtractor={(item) => item.id || item.url}
-            contentContainerStyle={{ padding: spacing.md, paddingBottom: 100 }}
+            contentContainerStyle={listPadding}
             showsVerticalScrollIndicator={false}
             keyboardShouldPersistTaps="handled"
           />
@@ -213,18 +202,8 @@ export default function SearchScreen() {
             Consultando catálogo público...
           </Text>
         </View>
-      ) : mediaError ? (
-        <EmptyState title="Sem resultados" description={mediaError} icon="Search" />
-      ) : searchQuery.trim().length < 2 ? (
-        <EmptyState
-          title={scope === 'music' ? 'Buscar música' : 'Buscar filmes'}
-          description={
-            scope === 'music'
-              ? 'Digite o nome da faixa, artista ou álbum. Os resultados vêm da iTunes Search API (com fallback Deezer).'
-              : 'Digite o nome do filme. Os resultados vêm da Wikipédia (e da iTunes, quando houver). Com EXPO_PUBLIC_TMDB_API_KEY a busca usa o TMDB.'
-          }
-          icon="Search"
-        />
+      ) : showMediaIdle ? (
+        <EmptyState title={emptyCopy.title} description={emptyCopy.description} icon="Search" />
       ) : (
         <FlatList
           data={mediaResults}
@@ -236,7 +215,7 @@ export default function SearchScreen() {
             />
           )}
           keyExtractor={(item) => `${item.source}-${item.sourceId}-${item.title}`}
-          contentContainerStyle={{ padding: spacing.md, paddingBottom: 100 }}
+          contentContainerStyle={listPadding}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
         />
@@ -250,11 +229,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     borderWidth: 1,
+    minHeight: 44,
   },
   searchInput: {
     flex: 1,
-    height: 36,
-    marginLeft: 6,
+    height: 40,
+    marginLeft: 8,
   },
   loadingBox: {
     flex: 1,

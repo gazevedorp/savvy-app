@@ -1,43 +1,51 @@
 import React, { useEffect, useState } from 'react';
-import { View, StyleSheet, Text, TextInput, ScrollView, TouchableOpacity, Image, Alert } from 'react-native';
+import { ScrollView, TouchableOpacity, Alert } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useLinkStore } from '@/store/linkStore';
 import { useCategoryStore } from '@/store/categoryStore';
 import { useTheme } from '@/context/ThemeContext';
-import { Check, Link as LinkIcon, Image as ImageIconLucide } from 'lucide-react-native';
+import { Check } from 'lucide-react-native';
 import Screen from '@/components/ui/Screen';
 import AppHeader from '@/components/ui/AppHeader';
 import { Link, LinkType } from '@/types';
-import CategorySelector from '@/components/ui/CategorySelector';
-import TypeSelector from '@/components/ui/TypeSelector';
 import * as ImagePicker from 'expo-image-picker';
 import { alertError } from '@/utils/errors';
 import { deleteStoredImage, ensureRemoteImageUrl, isUploadableImageUri } from '@/utils/imageUpload';
+import LinkForm from '@/components/ui/LinkForm';
+import { canSaveLinkForm } from '@/utils/linkForm';
+import MediaSearchPicker from '@/components/ui/MediaSearchPicker';
+import { MediaItem, mediaItemToLink } from '@/utils/itunes';
+import { isMediaType } from '@/utils/media';
+import { MediaMetadata } from '@/types';
 
 export default function EditLinkScreen() {
   const { id } = useLocalSearchParams();
   const { links, updateLink } = useLinkStore();
   const { categories } = useCategoryStore();
-  const { colors } = useTheme();
+  const { colors, spacing } = useTheme();
   const router = useRouter();
-  
+
   const [title, setTitle] = useState('');
   const [url, setUrl] = useState('');
   const [description, setDescription] = useState('');
   const [selectedType, setSelectedType] = useState<LinkType>('link');
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
-  const [imageUri, setImageUri] = useState<string | null>(null); // For image preview
+  const [imageUri, setImageUri] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [mediaMetadata, setMediaMetadata] = useState<MediaMetadata | null>(null);
+  const [thumbnail, setThumbnail] = useState<string | undefined>(undefined);
 
   useEffect(() => {
     if (id && typeof id === 'string') {
-      const currentLink = links.find(item => item.id === id);
+      const currentLink = links.find((item) => item.id === id);
       if (currentLink) {
         setTitle(currentLink.title);
         setUrl(currentLink.url);
         setDescription(currentLink.description || '');
         setSelectedType(currentLink.type);
         setSelectedCategories(currentLink.categoryIds || []);
+        setMediaMetadata(currentLink.metadata || null);
+        setThumbnail(currentLink.thumbnail);
         if (currentLink.type === 'image') {
           setImageUri(currentLink.url);
         }
@@ -48,7 +56,7 @@ export default function EditLinkScreen() {
   const handlePickImage = async () => {
     const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (permissionResult.granted === false) {
-      alert('É preciso permitir o acesso às fotos.');
+      Alert.alert('Permissão', 'É preciso permitir o acesso às fotos.');
       return;
     }
 
@@ -60,252 +68,154 @@ export default function EditLinkScreen() {
 
     if (!result.canceled && result.assets && result.assets.length > 0) {
       const pickedUri = result.assets[0].uri;
-      setUrl(pickedUri); // Store the local URI in the 'url' field for images
+      setUrl(pickedUri);
       setImageUri(pickedUri);
-      // Optionally, clear description or update title if needed
     }
   };
 
+  const handleSelectMedia = (item: MediaItem) => {
+    const mapped = mediaItemToLink(item);
+    setUrl(mapped.url || '');
+    setTitle(mapped.title || '');
+    setDescription(mapped.description || '');
+    setThumbnail(mapped.thumbnail);
+    setMediaMetadata(mapped.metadata || null);
+    setSelectedType(item.kind);
+  };
+
   const handleSave = async () => {
-    if (isLoading) return;
-    if (id && typeof id === 'string') {
-      if (selectedType === 'other' && !title.trim()) {
-        Alert.alert('Erro', 'Informe um título para a nota.');
-        return;
-      }
-      if (selectedType !== 'other' && !url.trim()) {
-        Alert.alert('Erro', selectedType === 'image' ? 'Escolha uma imagem ou informe um URL.' : 'Informe um URL.');
-        return;
-      }
-      if (!title.trim() && selectedType !== 'other') {
-          Alert.alert('Erro', 'Informe um título.');
-          return;
+    if (isLoading || !id || typeof id !== 'string') return;
+    if (!canSaveLinkForm({ type: selectedType, title, url })) {
+      Alert.alert(
+        'Erro',
+        selectedType === 'other' ? 'Informe um título para a nota.' : 'Informe um título e um URL.'
+      );
+      return;
+    }
+
+    let savvyTitle = title.trim();
+    if (!savvyTitle) {
+      if (selectedType === 'image' && isUploadableImageUri(url)) savvyTitle = 'Imagem editada';
+      else if (selectedType !== 'other') savvyTitle = url;
+      else savvyTitle = 'Nota sem título';
+    }
+
+    setIsLoading(true);
+    let uploadedUrl: string | null = null;
+    try {
+      let finalUrl = url;
+      let nextThumbnail = thumbnail;
+      if (selectedType === 'image' && isUploadableImageUri(url)) {
+        uploadedUrl = await ensureRemoteImageUrl(url);
+        finalUrl = uploadedUrl;
+        nextThumbnail = finalUrl;
       }
 
-      let savvyTitle = title.trim();
-      if (!savvyTitle) {
-        if (selectedType === 'image' && isUploadableImageUri(url)) savvyTitle = 'Imagem editada';
-        else if (selectedType !== 'other') savvyTitle = url;
-        else savvyTitle = 'Nota sem título';
+      const payload: Partial<Link> = {
+        title: savvyTitle,
+        url: finalUrl,
+        description,
+        type: selectedType,
+        categoryIds: selectedCategories,
+      };
+      if (nextThumbnail) payload.thumbnail = nextThumbnail;
+      if (isMediaType(selectedType)) {
+        payload.metadata = mediaMetadata;
+      } else {
+        payload.metadata = null;
       }
 
-      setIsLoading(true);
-      let uploadedUrl: string | null = null;
-      try {
-        let finalUrl = url;
-        let thumbnail: string | undefined;
-        if (selectedType === 'image' && isUploadableImageUri(url)) {
-          uploadedUrl = await ensureRemoteImageUrl(url);
-          finalUrl = uploadedUrl;
-          thumbnail = finalUrl;
-        }
-
-        const payload: Partial<Link> = {
-          title: savvyTitle,
-          url: finalUrl,
-          description,
-          type: selectedType,
-          categoryIds: selectedCategories,
-        };
-        if (thumbnail) payload.thumbnail = thumbnail;
-        if (selectedType !== 'music' && selectedType !== 'movie') {
-          payload.metadata = null;
-        }
-
-        await updateLink(id, payload);
-        router.back();
-      } catch (error) {
-        if (uploadedUrl) {
-          await deleteStoredImage(uploadedUrl);
-        }
-        alertError(error, 'Não foi possível salvar. Tente novamente.');
-      } finally {
-        setIsLoading(false);
+      await updateLink(id, payload);
+      router.back();
+    } catch (error) {
+      if (uploadedUrl) {
+        await deleteStoredImage(uploadedUrl);
       }
+      alertError(error, 'Não foi possível salvar. Tente novamente.');
+    } finally {
+      setIsLoading(false);
     }
   };
 
   const onTypeSelect = (newType: LinkType) => {
     const oldType = selectedType;
     setSelectedType(newType);
+    if (oldType === newType) return;
 
-    if (oldType !== newType) {
-      // If changing away from 'image' and URL was a local file
-      if (oldType === 'image' && isUploadableImageUri(url)) {
-        // Decide if URL should be cleared or kept if user switches to 'link' for example
-        // For now, let's keep it simple and not auto-clear, user can manually change
-      }
-      // If changing to 'image' and URL was a web URL
-      else if (newType === 'image' && url && !isUploadableImageUri(url)) {
-        setUrl('');
-        setImageUri(null);
-      }
-      // If changing to 'text'
-      else if (newType === 'other') {
-        // If switching to text, the URL field is not relevant in the same way
-        // setUrl(''); // Optionally clear URL
-        setImageUri(null);
-      }
+    if (newType === 'image' && url && !isUploadableImageUri(url)) {
+      setUrl('');
+      setImageUri(null);
+    } else if (newType === 'other') {
+      setImageUri(null);
+    }
+    if (!isMediaType(newType)) {
+      setMediaMetadata(null);
     }
   };
 
-  const handleBack = () => {
-    router.back();
-  };
-
-  const canSave = () => {
-    if (isLoading) return false;
-    if (selectedType === 'other') return !!title.trim();
-    return !!url.trim() && !!title.trim();
-  };
+  const readyToSave = canSaveLinkForm({
+    type: selectedType,
+    title,
+    url,
+    saving: isLoading,
+  });
 
   return (
     <Screen>
       <AppHeader
         title="Editar item"
-        onBack={handleBack}
+        onBack={() => router.back()}
         right={
-          <TouchableOpacity onPress={handleSave} disabled={!canSave()} accessibilityLabel="Salvar">
-            <Check size={24} color={canSave() ? colors.primary : colors.textSecondary} />
+          <TouchableOpacity
+            onPress={handleSave}
+            disabled={!readyToSave}
+            accessibilityLabel="Salvar"
+          >
+            <Check size={24} color={readyToSave ? colors.primary : colors.textSecondary} />
           </TouchableOpacity>
         }
       />
-      
-      <ScrollView style={styles.content}>
-        <View style={[styles.inputContainer, { backgroundColor: colors.card, borderColor: colors.border }]}>
-          <TextInput
-            style={[styles.input, { color: colors.text }]}
-            placeholder="Título"
-            placeholderTextColor={colors.textSecondary}
-            value={title}
-            onChangeText={setTitle}
-          />
-        </View>
-        
-        {selectedType === 'image' ? (
-          <>
-            <TouchableOpacity
-              style={[styles.pickImageButton, { backgroundColor: colors.card, borderColor: colors.border }]}
-              onPress={handlePickImage}
-            >
-              <ImageIconLucide size={20} color={colors.primary} style={styles.inputIcon} />
-              <Text style={[styles.pickImageButtonText, { color: colors.primary }]}>
-                {imageUri || url ? 'Trocar imagem' : 'Escolher imagem do dispositivo'}
-              </Text>
-            </TouchableOpacity>
-            {(imageUri || url) && (
-              <View style={styles.imagePreviewContainer}>
-                <Image source={{ uri: imageUri || url }} style={styles.imagePreview} resizeMode="contain" />
-              </View>
-            )}
-            {selectedType === 'image' && url && !isUploadableImageUri(url) && (
-                 <View style={[styles.inputContainer, { backgroundColor: colors.card, borderColor: colors.border }]}>
-                   <LinkIcon size={20} color={colors.textSecondary} style={styles.inputIcon} />
-                   <TextInput style={[styles.input, { color: colors.text }]} placeholder="URL da imagem" placeholderTextColor={colors.textSecondary} value={url} onChangeText={setUrl} autoCapitalize="none" autoCorrect={false} keyboardType="url"/>
-                 </View>
-            )}
-          </>
-        ) : selectedType !== 'other' && (
-          <View style={[styles.inputContainer, { backgroundColor: colors.card, borderColor: colors.border }]}>
-            <LinkIcon size={20} color={colors.textSecondary} style={styles.inputIcon} />
-            <TextInput style={[styles.input, { color: colors.text }]} placeholder={selectedType === 'video' ? "URL do vídeo" : selectedType === 'music' ? "URL da música" : selectedType === 'movie' ? "URL do filme" : "https://exemplo.com"} placeholderTextColor={colors.textSecondary} value={url} onChangeText={setUrl} autoCapitalize="none" autoCorrect={false} keyboardType="url"/>
-          </View>
-        )}
-        
-        <View style={[styles.textAreaContainer, { backgroundColor: colors.card, borderColor: colors.border }]}>
-          <TextInput
-            style={[styles.textArea, { color: colors.text }]}
-            placeholder={selectedType === 'other' ? "Escreva sua nota..." : "Descrição (opcional)"}
-            placeholderTextColor={colors.textSecondary}
-            value={description}
-            onChangeText={setDescription}
-            multiline
-            numberOfLines={4}
-            textAlignVertical="top"
-          />
-        </View>
-        
-        <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>Tipo</Text>
-        <TypeSelector 
+
+      <ScrollView
+        contentContainerStyle={{ padding: spacing.md, paddingBottom: 40 }}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+      >
+        <LinkForm
+          title={title}
+          onTitleChange={setTitle}
+          url={url}
+          onUrlChange={setUrl}
+          description={description}
+          onDescriptionChange={setDescription}
           selectedType={selectedType}
-          onSelectType={onTypeSelect}
-        />
-        
-        <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>Categorias</Text>
-        <CategorySelector
+          onTypeSelect={onTypeSelect}
           categories={categories}
           selectedCategories={selectedCategories}
-          onSelectCategory={(categoryId) => {
-            if (selectedCategories.includes(categoryId)) {
-              setSelectedCategories(selectedCategories.filter(id => id !== categoryId));
-            } else {
-              setSelectedCategories([...selectedCategories, categoryId]);
-            }
+          onToggleCategory={(categoryId) => {
+            setSelectedCategories((current) =>
+              current.includes(categoryId)
+                ? current.filter((id) => id !== categoryId)
+                : [...current, categoryId]
+            );
           }}
+          imageUri={imageUri}
+          onPickImage={handlePickImage}
+          mediaSlot={
+            isMediaType(selectedType) ? (
+              <MediaSearchPicker
+                kind={selectedType}
+                onSelect={handleSelectMedia}
+                selectedTitle={title || undefined}
+              />
+            ) : null
+          }
+          saveLabel="Salvar alterações"
+          onSave={handleSave}
+          saving={isLoading}
+          canSave={readyToSave}
         />
       </ScrollView>
     </Screen>
   );
 }
-
-const styles = StyleSheet.create({
-  content: {
-    padding: 16,
-  },
-  inputContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderWidth: 1,
-    borderRadius: 8,
-    marginBottom: 16,
-    paddingHorizontal: 8,
-  },
-  inputIcon: { // Added for LinkIcon
-    marginRight: 6,
-  },
-  input: {
-    height: 40,
-    fontFamily: 'Inter-Regular',
-    fontSize: 14,
-  },
-  textAreaContainer: {
-    borderWidth: 1,
-    borderRadius: 8,
-    marginBottom: 24,
-    padding: 8,
-  },
-  textArea: {
-    fontFamily: 'Inter-Regular',
-    fontSize: 14,
-    minHeight: 80,
-  },
-  sectionTitle: {
-    fontFamily: 'Inter-Medium',
-    fontSize: 14,
-    marginBottom: 12,
-  },
-  pickImageButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderWidth: 1,
-    borderRadius: 8,
-    marginBottom: 16,
-    paddingHorizontal: 8,
-    paddingVertical: 10,
-    justifyContent: 'center',
-  },
-  pickImageButtonText: {
-    fontFamily: 'Inter-Medium',
-    fontSize: 14,
-    marginLeft: 8,
-  },
-  imagePreviewContainer: {
-    alignItems: 'center',
-    marginBottom: 16,
-  },
-  imagePreview: {
-    width: '100%',
-    height: 200,
-    borderRadius: 8,
-  },
-});

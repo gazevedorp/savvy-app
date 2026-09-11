@@ -15,11 +15,11 @@ interface CategoryState {
   editCategory: (id: string, name: string, color?: string) => Promise<void>;
 }
 
-const DEFAULT_CATEGORIES: Pick<Category, 'name' | 'color'>[] = [
-  { name: "Artigos", color: "#0F6E6A" },
-  { name: "Tecnologia", color: "#FF2D55" },
-  { name: "Tutoriais", color: "#5856D6" },
-  { name: "Negócios", color: "#FF9500" },
+const DEFAULT_CATEGORIES: Pick<Category, 'name' | 'color' | 'icon'>[] = [
+  { name: "Artigos", color: "#0F6E6A", icon: "newspaper" },
+  { name: "Tecnologia", color: "#FF2D55", icon: "code" },
+  { name: "Tutoriais", color: "#5856D6", icon: "book-open" },
+  { name: "Negócios", color: "#FF9500", icon: "briefcase" },
 ];
 
 function mapCategory(item: Category): Category {
@@ -75,6 +75,7 @@ export const useCategoryStore = create<CategoryState>((set, get) => ({
             .insert({
               name: defaultCat.name,
               color: defaultCat.color,
+              icon: defaultCat.icon,
               user_id: userId,
             })
             .select()

@@ -1,86 +1,126 @@
 import React from 'react';
-import { View, StyleSheet, Text, TouchableOpacity } from 'react-native';
+import { View, StyleSheet, Text, Pressable } from 'react-native';
 import { Category } from '@/types';
 import { useTheme } from '@/context/ThemeContext';
 import { useRouter } from 'expo-router';
-// Icons are no longer directly used here
+import { EllipsisVertical } from 'lucide-react-native';
 import Animated, { FadeIn } from 'react-native-reanimated';
+import CategoryIcon from '@/components/ui/CategoryIcon';
+import { contrastOnColor, formatCategoryCount } from '@/utils/categories';
 
 interface CategoryCardProps {
   category: Category;
   linkCount: number;
   width: number;
-  onLongPress: (category: Category) => void; // Changed from onEdit/onDelete
+  onOpenActions: (category: Category) => void;
 }
 
-export default function CategoryCard({ category, linkCount, width, onLongPress }: CategoryCardProps) {
-  const { colors, spacing, radius, typography } = useTheme();
+export default function CategoryCard({
+  category,
+  linkCount,
+  width,
+  onOpenActions,
+}: CategoryCardProps) {
+  const { colors, spacing, radius, typography, elevation } = useTheme();
   const router = useRouter();
-
-  const getContrastColor = (hexColor: string): string => {
-    if (!hexColor || hexColor.length < 7) return '#FFFFFF'; // Default to white for invalid or undefined colors
-    const r = parseInt(hexColor.slice(1, 3), 16);
-    const g = parseInt(hexColor.slice(3, 5), 16);
-    const b = parseInt(hexColor.slice(5, 7), 16);
-    const brightness = Math.round((r * 299 + g * 587 + b * 114) / 1000);
-    return brightness > 125 ? '#000000' : '#FFFFFF';
-  };
-  
-  const textColor = getContrastColor(category.color || colors.primary); // Fallback if color is undefined
+  const accent = category.color || colors.primary;
+  const onAccent = contrastOnColor(accent);
 
   const handleCardPress = () => {
-    router.push({ pathname: '/', params: { categoryId: category.id, categoryName: category.name } });
+    router.push({
+      pathname: '/',
+      params: { categoryId: category.id, categoryName: category.name },
+    });
   };
 
-
   return (
-    <Animated.View entering={FadeIn.duration(300)}>
-      <TouchableOpacity
+    <Animated.View entering={FadeIn.duration(300)} style={{ width }}>
+      <View
         style={[
           styles.container,
-          { 
-            backgroundColor: category.color || colors.primary,
-            width: width,
-            borderRadius: radius.md,
+          {
+            backgroundColor: colors.card,
+            borderColor: colors.border,
+            borderRadius: radius.lg,
             padding: spacing.sm,
-          }
+          },
+          elevation.sm,
         ]}
-        onPress={handleCardPress}
-        onLongPress={() => onLongPress(category)} // Call onLongPress with the category
-        activeOpacity={0.8}
-        delayLongPress={300} // Standard delay for long press
       >
-        <View style={styles.content}>
-          <Text style={[styles.name, typography.label, { fontFamily: 'Inter-Bold', color: textColor }]} numberOfLines={2}>
-            {category.name}
-          </Text>
-          
-          <Text style={[styles.count, typography.caption, { color: textColor + 'B3' }]}>
-            {linkCount} {linkCount === 1 ? 'item' : 'itens'}
-          </Text>
-        </View>
-        {/* Action icons are removed */}
-      </TouchableOpacity>
+        <Pressable
+          style={styles.main}
+          onPress={handleCardPress}
+          onLongPress={() => onOpenActions(category)}
+          delayLongPress={300}
+          accessibilityRole="button"
+          accessibilityLabel={`${category.name}, ${formatCategoryCount(linkCount)}`}
+          accessibilityHint="Toque para filtrar. Mantenha pressionado para editar ou excluir."
+        >
+          <View style={[styles.swatch, { backgroundColor: accent, borderRadius: radius.md }]}>
+            <CategoryIcon name={category.icon} color={onAccent} size={22} />
+          </View>
+
+          <View style={[styles.body, { marginLeft: spacing.sm }]}>
+            <Text style={[typography.heading, { color: colors.text }]} numberOfLines={2}>
+              {category.name}
+            </Text>
+            <Text
+              style={[
+                typography.caption,
+                {
+                  color: colors.textSecondary,
+                  marginTop: spacing.xxs,
+                  fontFamily: 'Inter-Regular',
+                },
+              ]}
+            >
+              {formatCategoryCount(linkCount)}
+            </Text>
+          </View>
+        </Pressable>
+
+        <Pressable
+          onPress={() => onOpenActions(category)}
+          hitSlop={8}
+          accessibilityRole="button"
+          accessibilityLabel={`Ações para ${category.name}`}
+          style={styles.more}
+        >
+          <EllipsisVertical size={18} color={colors.textSecondary} />
+        </Pressable>
+      </View>
     </Animated.View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    height: 90,
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1,
+    minHeight: 88,
   },
-  content: {
-    flex: 1, // Takes available space
-    justifyContent: 'space-between', // Distributes name and count vertically
-    height: '100%', // Ensure it takes full height for space-between to work
+  main: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    minWidth: 0,
   },
-  name: {
-    fontFamily: 'Inter-Bold',
-    fontSize: 14,
-    marginBottom: 4, // Add some space between name and count
+  swatch: {
+    width: 48,
+    height: 48,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  count: {
-    fontFamily: 'Inter-Medium',
-    fontSize: 12,
+  body: {
+    flex: 1,
+    minWidth: 0,
+    justifyContent: 'center',
+  },
+  more: {
+    width: 32,
+    height: 32,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 });

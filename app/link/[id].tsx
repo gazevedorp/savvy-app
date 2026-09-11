@@ -1,20 +1,18 @@
 import React, { useEffect, useState } from 'react';
-import { View, StyleSheet, Text, ScrollView, TouchableOpacity, Linking, Share, Image, Platform, Alert } from 'react-native';
+import { View, StyleSheet, Text, ScrollView, TouchableOpacity, Linking, Share, Platform, Alert } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useLinkStore } from '@/store/linkStore';
 import { useTheme } from '@/context/ThemeContext';
 import { ExternalLink, Share2, Edit, Trash2, Check, Clock } from 'lucide-react-native';
 import Screen from '@/components/ui/Screen';
 import AppHeader from '@/components/ui/AppHeader';
-import Card from '@/components/ui/Card';
-import Chip from '@/components/ui/Chip';
 import { useCategoryStore } from '@/store/categoryStore';
-import { formatRelativeTime } from '@/utils/dateUtils';
-import WebView from '@/components/WebView';
 import { Link } from '@/types';
 import ConfirmationModal from '@/components/modals/ConfirmationModal';
 import MediaDetailView from '@/components/ui/MediaDetailView';
+import GenericDetailView from '@/components/ui/GenericDetailView';
 import { getTypeLabel, isMediaType } from '@/utils/media';
+import { isLocalImageLink } from '@/utils/detail';
 import { alertError } from '@/utils/errors';
 
 export default function LinkDetailScreen() {
@@ -83,7 +81,6 @@ export default function LinkDetailScreen() {
     if (link && link.id) {
       try {
         await deleteLink(link.id);
-        setDeleteModalVisible(false);
         router.back();
       } catch (error) {
         alertError(error, 'Não foi possível excluir o item.');
@@ -92,17 +89,16 @@ export default function LinkDetailScreen() {
   };
 
   const getCategoryNames = () => {
-    if (!link?.categoryIds || !link.categoryIds.length) return 'Nenhuma categoria';
-    
+    if (!link?.categoryIds || !link.categoryIds.length) return [] as string[];
     return link.categoryIds
-      .map(catId => categories.find(cat => cat.id === catId)?.name)
-      .filter(Boolean)
-      .join(', ');
+      .map((catId) => categories.find((cat) => cat.id === catId)?.name)
+      .filter((name): name is string => Boolean(name));
   };
 
   if (!link) {
     return (
       <Screen>
+        <AppHeader title="Detalhe" onBack={handleBack} />
         <Text style={[styles.errorText, typography.heading, { color: colors.text }]}>
           Item não encontrado
         </Text>
@@ -110,123 +106,86 @@ export default function LinkDetailScreen() {
     );
   }
 
-  const isLocalImage = link.type === 'image';
+  const isLocalImage = isLocalImageLink(link);
   const isMedia = isMediaType(link.type);
+  const categoryNames = getCategoryNames();
 
   return (
     <Screen>
       <AppHeader
-        title={isMedia ? getTypeLabel(link.type) : link.title}
+        title={getTypeLabel(link.type)}
         onBack={handleBack}
       />
-      
-      <ScrollView style={styles.content}>
+
+      <ScrollView
+        style={styles.content}
+        contentContainerStyle={{ padding: spacing.md, paddingBottom: 120 }}
+        showsVerticalScrollIndicator={false}
+      >
         {isMedia ? (
-          <MediaDetailView link={link} categoryNames={getCategoryNames()} />
+          <MediaDetailView link={link} categoryNames={categoryNames.join(', ') || 'Nenhuma categoria'} />
         ) : (
-          <>
-        <Card style={{ marginBottom: spacing.md }}>
-          <Text style={[styles.title, typography.title, { color: colors.text }]}>{link.title}</Text>
-          
-          {!isLocalImage && link.url && (
-            <Text 
-              style={[styles.url, { color: colors.primary }]} 
-              numberOfLines={1}
-              onPress={handleOpenLink}
-            >
-              {link.url}
-            </Text>
-          )}
-          
-          {link.description && (
-            <Text style={[styles.description, { color: colors.text }]}>
-              {link.description}
-            </Text>
-          )}
-          
-          <View style={styles.metaRow}>
-            <Chip label={getTypeLabel(link.type)} variant="tag" />
-            
-            <Text style={[styles.dateText, typography.caption, { color: colors.textSecondary }]}>
-              Salvo {formatRelativeTime(link.created_at)}
-            </Text>
-          </View>
-          
-          <View style={styles.categoryRow}>
-            <Text style={[styles.categoryLabel, typography.caption, { color: colors.textSecondary }]}>
-              Categorias:
-            </Text>
-            <Text style={[styles.categoryText, typography.caption, { color: colors.text, fontFamily: 'Inter-Regular' }]}>
-              {getCategoryNames()}
-            </Text>
-          </View>
-        </Card>
-        
-        {isLocalImage ? (
-          <View style={[styles.imagePreviewContainer, { backgroundColor: colors.card, borderColor: colors.border }]}>
-            <Image source={{ uri: link.url }} style={styles.localImagePreview} resizeMode="contain" />
-          </View>
-        ) : link.url ? ( // Only show WebView if there's a URL and it's not a local image
-          <View style={[styles.previewContainer, { backgroundColor: colors.card, borderColor: colors.border }]}>
-            <Text style={[styles.previewTitle, typography.overline, { color: colors.textSecondary, borderBottomColor: colors.border }]}>
-              Prévia
-            </Text>
-            <WebView // Este é o seu componente customizado de @/components/WebView
-              url={link.url}
-              style={styles.webView}
-            />
-          </View>
-        ) : (
-          // Optionally, show something if there's no URL and it's not an image (e.g., for 'text' type)
-          <View style={styles.noPreviewContainer} />
-        )}
-          </>
+          <GenericDetailView link={link} categoryNames={categoryNames} />
         )}
       </ScrollView>
-      
-      <View style={[styles.actionBar, { backgroundColor: colors.background, borderTopColor: colors.border }]}>
+
+      <View
+        style={[
+          styles.actionBar,
+          {
+            backgroundColor: colors.background,
+            borderTopColor: colors.border,
+            paddingVertical: spacing.sm,
+          },
+        ]}
+      >
         <TouchableOpacity
           style={styles.actionButton}
           onPress={handleToggleRead}
+          accessibilityLabel={link.is_read ? 'Marcar como a fazer' : 'Marcar como feito'}
         >
           {link.is_read ? (
-            <Check size={24} color={colors.success} />
+            <Check size={22} color={colors.success} />
           ) : (
-            <Clock size={24} color={colors.textSecondary} />
+            <Clock size={22} color={colors.textSecondary} />
           )}
         </TouchableOpacity>
-        
-        {!isLocalImage && link.url && (
+
+        {!isLocalImage && link.url ? (
           <TouchableOpacity
             style={styles.actionButton}
             onPress={handleOpenLink}
+            accessibilityLabel="Abrir link"
           >
-            <ExternalLink size={24} color={colors.primary} />
+            <ExternalLink size={22} color={colors.primary} />
           </TouchableOpacity>
-        )}
+        ) : null}
 
         <TouchableOpacity
           style={styles.actionButton}
           onPress={handleShareLink}
+          accessibilityLabel="Compartilhar"
         >
-          <Share2 size={24} color={colors.text} />
+          <Share2 size={22} color={colors.text} />
         </TouchableOpacity>
-        
+
         <TouchableOpacity
           style={styles.actionButton}
           onPress={() => router.push(`/link/edit?id=${link.id}`)}
+          accessibilityLabel="Editar"
         >
-          <Edit size={24} color={colors.text} />
+          <Edit size={22} color={colors.text} />
         </TouchableOpacity>
-        
+
         <TouchableOpacity
           style={styles.actionButton}
           onPress={() => setDeleteModalVisible(true)}
+          accessibilityLabel="Excluir"
         >
-          <Trash2 size={24} color={colors.error} />
+          <Trash2 size={22} color={colors.error} />
         </TouchableOpacity>
       </View>
-      
+
       <ConfirmationModal
         visible={deleteModalVisible}
         title="Excluir item"
@@ -244,79 +203,10 @@ export default function LinkDetailScreen() {
 const styles = StyleSheet.create({
   content: {
     flex: 1,
-    padding: 16,
-  },
-  title: {
-    fontFamily: 'Inter-Bold',
-    fontSize: 18,
-    marginBottom: 8,
-  },
-  url: {
-    fontFamily: 'Inter-Regular',
-    fontSize: 12,
-    marginBottom: 12,
-  },
-  description: {
-    fontFamily: 'Inter-Regular',
-    fontSize: 14,
-    lineHeight: 22,
-    marginBottom: 16,
-  },
-  metaRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 12,
-  },
-  dateText: {
-    fontFamily: 'Inter-Regular',
-    fontSize: 12,
-  },
-  categoryRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  categoryLabel: {
-    fontFamily: 'Inter-Medium',
-    fontSize: 12,
-    marginRight: 8,
-  },
-  categoryText: {
-    fontFamily: 'Inter-Regular',
-    fontSize: 12,
-    flex: 1,
-  },
-  previewContainer: {
-    borderRadius: 12,
-    borderWidth: 1,
-    overflow: 'hidden',
-    marginBottom: 100,
-  },
-  previewTitle: {
-    fontFamily: 'Inter-Medium',
-    fontSize: 12,
-    padding: 12,
-    borderBottomWidth: 1,
-  },
-  webView: {
-    height: 350, // Adjusted height for webview
-  },
-  imagePreviewContainer: {
-    borderRadius: 12,
-    borderWidth: 1,
-    overflow: 'hidden',
-    marginBottom: 100, // Keep consistent bottom margin
-    padding: 8, // Add some padding around the image
-  },
-  localImagePreview: {
-    width: '100%',
-    height: 300, // Adjust as needed, or make it dynamic
-    borderRadius: 8,
   },
   actionBar: {
     flexDirection: 'row',
     justifyContent: 'space-around',
-    paddingVertical: 12,
     borderTopWidth: 1,
     position: 'absolute',
     bottom: 0,
@@ -330,12 +220,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   errorText: {
-    fontFamily: 'Inter-Medium',
-    fontSize: 16,
     textAlign: 'center',
     marginTop: 24,
   },
-  noPreviewContainer: {
-    marginBottom: 100, // To ensure content doesn't hide behind action bar
-  }
 });

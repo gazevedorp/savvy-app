@@ -55,7 +55,7 @@ export default function TabLayout() {
             tabBarIcon: ({ color, size }) => (
               <Grid3X3 size={size} color={color} />
             ),
-            headerShown: true,
+            headerShown: false,
           }}
         />
         <Tabs.Screen
@@ -66,7 +66,7 @@ export default function TabLayout() {
             tabBarIcon: ({ color, size }) => (
               <Search size={size} color={color} />
             ),
-            headerShown: true,
+            headerShown: false,
           }}
         />
         <Tabs.Screen
