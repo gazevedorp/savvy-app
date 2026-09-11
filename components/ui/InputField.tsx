@@ -15,6 +15,7 @@ interface InputFieldProps extends TextInputProps {
   error?: string;
   isPassword?: boolean;
   required?: boolean;
+  leftIcon?: React.ReactNode;
 }
 
 export default function InputField({
@@ -22,21 +23,27 @@ export default function InputField({
   error,
   isPassword = false,
   required = false,
+  leftIcon,
   value,
   onChangeText,
+  multiline,
+  style,
   ...props
 }: InputFieldProps) {
   const { colors, spacing, radius, typography } = useTheme();
   const [showPassword, setShowPassword] = useState(false);
 
   return (
-    <View style={{ marginBottom: spacing.lg }}>
+    <View style={{ marginBottom: spacing.md }}>
       <Text style={[typography.caption, { color: colors.text, marginBottom: spacing.xxs + 2 }]}>
         {label}
         {required && <Text style={{ color: colors.error }}> *</Text>}
       </Text>
 
       <View>
+        {leftIcon ? (
+          <View style={[styles.leftIcon, { left: spacing.sm }]}>{leftIcon}</View>
+        ) : null}
         <TextInput
           style={[
             styles.input,
@@ -47,14 +54,19 @@ export default function InputField({
               color: colors.text,
               borderRadius: radius.md,
               padding: spacing.sm,
+              paddingLeft: leftIcon ? spacing.xl + spacing.sm : spacing.sm,
               fontFamily: 'Inter-Regular',
+              minHeight: multiline ? 96 : undefined,
+              textAlignVertical: multiline ? 'top' : 'center',
             },
             isPassword && styles.passwordInput,
+            style,
           ]}
           value={value}
           onChangeText={onChangeText}
           secureTextEntry={isPassword && !showPassword}
           placeholderTextColor={colors.textSecondary}
+          multiline={multiline}
           {...props}
         />
 
@@ -91,5 +103,12 @@ const styles = StyleSheet.create({
   eyeButton: {
     position: 'absolute',
     padding: 4,
+  },
+  leftIcon: {
+    position: 'absolute',
+    top: 0,
+    bottom: 0,
+    justifyContent: 'center',
+    zIndex: 1,
   },
 });

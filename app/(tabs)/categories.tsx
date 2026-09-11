@@ -1,28 +1,27 @@
-import React, { useEffect, useState } from "react";
-import {
-  StyleSheet,
-  FlatList,
-  useWindowDimensions,
-} from "react-native";
-import { useCategoryStore } from "@/store/categoryStore";
-import { useLinkStore } from "@/store/linkStore";
-import CategoryCard from "@/components/ui/CategoryCard";
-import EmptyState from "@/components/ui/EmptyState";
-import AddCategoryModal from "@/components/modals/AddCategoryModal";
-import Screen from "@/components/ui/Screen";
-import FAB from "@/components/ui/FAB";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { Category } from "@/types";
-import DeleteCategoryOptionsModal from "@/components/modals/DeleteCategoryOptionsModal";
-import CategoryActionsModal from "@/components/modals/CategoryActionsModal";
-import { alertError } from "@/utils/errors";
+import React, { useEffect, useMemo, useState } from 'react';
+import { StyleSheet, FlatList, useWindowDimensions } from 'react-native';
+import { useCategoryStore } from '@/store/categoryStore';
+import { useLinkStore } from '@/store/linkStore';
+import CategoryCard from '@/components/ui/CategoryCard';
+import EmptyState from '@/components/ui/EmptyState';
+import AddCategoryModal from '@/components/modals/AddCategoryModal';
+import Screen from '@/components/ui/Screen';
+import FAB from '@/components/ui/FAB';
+import HomeHeader from '@/components/ui/HomeHeader';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Category } from '@/types';
+import DeleteCategoryOptionsModal from '@/components/modals/DeleteCategoryOptionsModal';
+import CategoryActionsModal from '@/components/modals/CategoryActionsModal';
+import { countLinksInCategory, formatCategoryCount } from '@/utils/categories';
+import { alertError } from '@/utils/errors';
+import { useTheme } from '@/context/ThemeContext';
 
 export default function CategoriesScreen() {
   const {
     categories,
     fetchCategories,
     addCategory,
-    editCategory,
+    updateCategory,
     deleteCategory,
   } = useCategoryStore();
   const {
@@ -30,33 +29,26 @@ export default function CategoriesScreen() {
     removeCategoryFromAssociatedLinks,
     deleteLinksAssociatedWithCategory,
   } = useLinkStore();
+  const { spacing } = useTheme();
   const [isAddEditModalVisible, setIsAddEditModalVisible] = useState(false);
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
-
-  const [deletingCategory, setDeletingCategory] = useState<Category | null>(
+  const [deletingCategory, setDeletingCategory] = useState<Category | null>(null);
+  const [isDeleteOptionsModalVisible, setIsDeleteOptionsModalVisible] = useState(false);
+  const [isActionsModalVisible, setIsActionsModalVisible] = useState(false);
+  const [selectedCategoryForAction, setSelectedCategoryForAction] = useState<Category | null>(
     null
   );
-  const [isDeleteOptionsModalVisible, setIsDeleteOptionsModalVisible] =
-    useState(false);
-
-  // State for the new actions modal
-  const [isActionsModalVisible, setIsActionsModalVisible] = useState(false);
-  const [selectedCategoryForAction, setSelectedCategoryForAction] =
-    useState<Category | null>(null);
 
   const { width } = useWindowDimensions();
   const insets = useSafeAreaInsets();
-
   const numColumns = width > 768 ? 3 : 2;
-  const cardWidth = (width - (32 + (numColumns - 1) * 16)) / numColumns;
+  const gutter = spacing.md;
+  const gap = spacing.sm;
+  const cardWidth = (width - (gutter * 2 + (numColumns - 1) * gap)) / numColumns;
 
   useEffect(() => {
-    fetchCategories().catch(() => {});
+    fetchCategories();
   }, [fetchCategories]);
-
-  const getCategoryLinkCount = (categoryId: string) => {
-    return links.filter((link) => link.categoryIds?.includes(categoryId)).length;
-  };
 
   const handleOpenAddModal = () => {
     setEditingCategory(null);
@@ -83,8 +75,7 @@ export default function CategoriesScreen() {
     setDeletingCategory(null);
   };
 
-  // Handlers for the new Actions Modal
-  const handleLongPressCategory = (category: Category) => {
+  const handleOpenActions = (category: Category) => {
     setSelectedCategoryForAction(category);
     setIsActionsModalVisible(true);
   };
@@ -98,25 +89,25 @@ export default function CategoriesScreen() {
     if (selectedCategoryForAction) {
       handleOpenEditModal(selectedCategoryForAction);
     }
-    handleCloseActionsModal(); // Close actions modal after initiating edit
+    handleCloseActionsModal();
   };
 
   const handleDeleteFromActionsModal = () => {
     if (selectedCategoryForAction) {
       handleOpenDeleteModal(selectedCategoryForAction);
     }
-    handleCloseActionsModal(); // Close actions modal after initiating delete
+    handleCloseActionsModal();
   };
 
   const handleDeleteCategoryOnly = async () => {
     if (!deletingCategory || !deletingCategory.id) return;
     try {
-      await deleteCategory(deletingCategory.id);
       await removeCategoryFromAssociatedLinks(deletingCategory.id);
-      handleCloseDeleteModal();
+      await deleteCategory(deletingCategory.id);
     } catch (error) {
-      alertError(error, "Não foi possível excluir a categoria.");
+      alertError(error, 'Não foi possível excluir a categoria.');
     }
+    handleCloseDeleteModal();
   };
 
   const handleDeleteCategoryAndLinks = async () => {
@@ -124,10 +115,10 @@ export default function CategoriesScreen() {
     try {
       await deleteLinksAssociatedWithCategory(deletingCategory.id);
       await deleteCategory(deletingCategory.id);
-      handleCloseDeleteModal();
     } catch (error) {
-      alertError(error, "Não foi possível excluir a categoria e os itens.");
+      alertError(error, 'Não foi possível excluir a categoria e os itens.');
     }
+    handleCloseDeleteModal();
   };
 
   const handleSaveCategory = async (data: {
@@ -137,7 +128,11 @@ export default function CategoriesScreen() {
   }) => {
     try {
       if (editingCategory && editingCategory.id) {
-        await editCategory(editingCategory.id, data.name, data.color);
+        await updateCategory(editingCategory.id, {
+          name: data.name,
+          color: data.color,
+          icon: data.icon,
+        });
       } else {
         await addCategory({
           name: data.name,
@@ -145,35 +140,43 @@ export default function CategoriesScreen() {
           icon: data.icon,
         });
       }
-      handleCloseAddEditModal();
     } catch (error) {
-      alertError(error, "Não foi possível salvar a categoria.");
+      alertError(error, 'Não foi possível salvar a categoria.');
     }
+    handleCloseAddEditModal();
   };
 
-  const renderItem = ({ item }: { item: Category }) => (
-    <CategoryCard
-      category={item}
-      linkCount={getCategoryLinkCount(item.id || '')}
-      width={cardWidth}
-      onLongPress={handleLongPressCategory} // Use onLongPress to open actions modal
-      // onEdit and onDelete are removed from here
-    />
-  );
+  const subtitle = useMemo(() => {
+    if (categories.length === 0) return 'Organize seus itens';
+    return `${categories.length} ${categories.length === 1 ? 'categoria' : 'categorias'} · ${formatCategoryCount(links.length)}`;
+  }, [categories.length, links.length]);
 
   return (
     <Screen>
+      <HomeHeader title="Categorias" subtitle={subtitle} />
+
       {categories.length > 0 ? (
         <FlatList
+          key={numColumns}
           data={categories}
-          renderItem={renderItem}
-          keyExtractor={(item) => item.id || `category-${Math.random()}`}
+          renderItem={({ item }) => (
+            <CategoryCard
+              category={item}
+              linkCount={countLinksInCategory(links, item.id || '')}
+              width={cardWidth}
+              onOpenActions={handleOpenActions}
+            />
+          )}
+          keyExtractor={(item, index) => item.id || `category-${index}`}
           contentContainerStyle={[
             styles.listContent,
-            { paddingBottom: insets.bottom + 100 },
+            {
+              padding: gutter,
+              paddingBottom: insets.bottom + 100,
+            },
           ]}
           numColumns={numColumns}
-          columnWrapperStyle={styles.columnWrapper}
+          columnWrapperStyle={{ gap, marginBottom: gap }}
           showsVerticalScrollIndicator={false}
         />
       ) : (
@@ -181,21 +184,21 @@ export default function CategoriesScreen() {
           title="Nenhuma categoria ainda"
           description="Crie categorias para organizar seus itens salvos."
           icon="FolderPlus"
+          actionLabel="Nova categoria"
+          onAction={handleOpenAddModal}
         />
       )}
 
       <FAB onPress={handleOpenAddModal} accessibilityLabel="Nova categoria" />
 
-      {/* Modal for Adding or Editing a Category */}
       <AddCategoryModal
         visible={isAddEditModalVisible}
         onClose={handleCloseAddEditModal}
         categoryToEdit={editingCategory}
-        onSave={handleSaveCategory} // Pass the combined save handler
+        onSave={handleSaveCategory}
       />
 
-      {/* Modal for Delete Category Options */}
-      {deletingCategory && (
+      {deletingCategory ? (
         <DeleteCategoryOptionsModal
           visible={isDeleteOptionsModalVisible}
           categoryName={deletingCategory.name}
@@ -203,10 +206,9 @@ export default function CategoriesScreen() {
           onDeleteCategoryOnly={handleDeleteCategoryOnly}
           onDeleteCategoryAndLinks={handleDeleteCategoryAndLinks}
         />
-      )}
+      ) : null}
 
-      {/* New Actions Modal for Edit/Delete on Long Press */}
-      {selectedCategoryForAction && (
+      {selectedCategoryForAction ? (
         <CategoryActionsModal
           visible={isActionsModalVisible}
           onClose={handleCloseActionsModal}
@@ -214,18 +216,13 @@ export default function CategoriesScreen() {
           onEdit={handleEditFromActionsModal}
           onDelete={handleDeleteFromActionsModal}
         />
-      )}
+      ) : null}
     </Screen>
   );
 }
 
 const styles = StyleSheet.create({
   listContent: {
-    padding: 16,
-  },
-  columnWrapper: {
-    justifyContent: "flex-start",
-    gap: 16,
-    marginBottom: 16,
+    flexGrow: 1,
   },
 });

@@ -1,14 +1,14 @@
-// app/components/modals/DeleteCategoryOptionsModal.tsx
 import React from 'react';
-import { Modal, View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { Modal, View, Text, StyleSheet } from 'react-native';
 import { useTheme } from '@/context/ThemeContext';
+import Button from '@/components/ui/Button';
 
 interface DeleteCategoryOptionsModalProps {
   visible: boolean;
   categoryName: string;
   onClose: () => void;
-  onDeleteCategoryOnly: () => Promise<void>; // Mark as async if operations are async
-  onDeleteCategoryAndLinks: () => Promise<void>; // Mark as async
+  onDeleteCategoryOnly: () => Promise<void>;
+  onDeleteCategoryAndLinks: () => Promise<void>;
 }
 
 export default function DeleteCategoryOptionsModal({
@@ -18,55 +18,79 @@ export default function DeleteCategoryOptionsModal({
   onDeleteCategoryOnly,
   onDeleteCategoryAndLinks,
 }: DeleteCategoryOptionsModalProps) {
-  const { colors } = useTheme();
+  const { colors, spacing, radius, typography } = useTheme();
 
   return (
-    <Modal
-      animationType="fade"
-      transparent={true}
-      visible={visible}
-      onRequestClose={onClose}
-    >
-      <View style={styles.centeredView}>
-        <View style={[styles.modalView, { backgroundColor: colors.card }]}>
-          <Text style={[styles.modalTitle, { color: colors.text }]}>Excluir “{categoryName}”</Text>
-          <Text style={[styles.modalMessage, { color: colors.textSecondary }]}>
+    <Modal animationType="fade" transparent visible={visible} onRequestClose={onClose}>
+      <View style={[styles.centeredView, { backgroundColor: colors.overlay }]}>
+        <View
+          style={[
+            styles.modalView,
+            {
+              backgroundColor: colors.card,
+              borderRadius: radius.lg,
+              padding: spacing.xl,
+            },
+          ]}
+        >
+          <Text style={[typography.heading, styles.title, { color: colors.text }]}>
+            Excluir “{categoryName}”
+          </Text>
+          <Text
+            style={[
+              typography.body,
+              styles.message,
+              { color: colors.textSecondary, marginBottom: spacing.lg },
+            ]}
+          >
             Como você quer excluir esta categoria?
           </Text>
 
-          <TouchableOpacity
-            style={[styles.button, { backgroundColor: colors.primary }]}
+          <Button
+            title="Excluir só a categoria"
             onPress={async () => {
               await onDeleteCategoryOnly();
-              onClose(); // Ensure modal closes after action
             }}
+          />
+          <Text
+            style={[
+              typography.caption,
+              {
+                color: colors.textSecondary,
+                fontFamily: 'Inter-Regular',
+                marginTop: spacing.xs,
+                marginBottom: spacing.md,
+                textAlign: 'center',
+              },
+            ]}
           >
-            <Text style={[styles.buttonText, { color: colors.onPrimary }]}>Excluir só a categoria</Text>
-          </TouchableOpacity>
-          <Text style={[styles.optionDescription, { color: colors.textSecondary }]}>
-            Os itens desta categoria não serão apagados, mas deixam de ficar associados a “{categoryName}”.
+            Os itens desta categoria não serão apagados, mas deixam de ficar associados a “
+            {categoryName}”.
           </Text>
 
-          <TouchableOpacity
-            style={[styles.button, { backgroundColor: colors.error }]}
+          <Button
+            title="Excluir categoria e todos os itens"
             onPress={async () => {
               await onDeleteCategoryAndLinks();
-              onClose(); // Ensure modal closes after action
             }}
+            variant="destructive"
+          />
+          <Text
+            style={[
+              typography.caption,
+              {
+                color: colors.error,
+                fontFamily: 'Inter-Regular',
+                marginTop: spacing.xs,
+                marginBottom: spacing.lg,
+                textAlign: 'center',
+              },
+            ]}
           >
-            <Text style={[styles.buttonText, { color: '#FFFFFF' }]}>Excluir categoria e todos os itens</Text>
-          </TouchableOpacity>
-           <Text style={[styles.optionDescription, { color: colors.textSecondary, marginBottom: 20 }]}>
             Isso apaga permanentemente a categoria e todos os itens associados a ela.
           </Text>
 
-
-          <TouchableOpacity
-            style={[styles.button, styles.buttonCancel, { borderColor: colors.border }]}
-            onPress={onClose}
-          >
-            <Text style={[styles.buttonText, { color: colors.text }]}>Cancelar</Text>
-          </TouchableOpacity>
+          <Button title="Cancelar" onPress={onClose} variant="outline" />
         </View>
       </View>
     </Modal>
@@ -78,57 +102,16 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: 'rgba(0,0,0,0.6)',
   },
   modalView: {
-    margin: 20,
-    borderRadius: 12,
-    padding: 24,
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.25,
-    shadowRadius: 4,
-    elevation: 5,
     width: '90%',
+    maxWidth: 400,
   },
-  modalTitle: {
-    fontSize: 16,
-    fontFamily: 'Inter-Bold',
+  title: {
+    textAlign: 'center',
     marginBottom: 8,
+  },
+  message: {
     textAlign: 'center',
   },
-  modalMessage: {
-    fontSize: 13,
-    fontFamily: 'Inter-Regular',
-    marginBottom: 20,
-    textAlign: 'center',
-  },
-  optionDescription: {
-    fontSize: 11,
-    fontFamily: 'Inter-Regular',
-    textAlign: 'center',
-    marginTop: 4,
-    marginBottom: 16,
-  },
-  button: {
-    borderRadius: 8,
-    paddingVertical: 12,
-    paddingHorizontal: 20,
-    elevation: 2,
-    width: '100%',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  buttonText: {
-    fontSize: 14,
-    fontFamily: 'Inter-Medium',
-  },
-  buttonCancel: {
-    backgroundColor: 'transparent',
-    borderWidth: 1,
-  }
 });

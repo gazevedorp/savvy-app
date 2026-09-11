@@ -11,7 +11,7 @@ import { useTheme } from '@/context/ThemeContext';
 interface ButtonProps {
   title: string;
   onPress: () => void;
-  variant?: 'primary' | 'secondary' | 'outline';
+  variant?: 'primary' | 'secondary' | 'outline' | 'destructive';
   loading?: boolean;
   disabled?: boolean;
   fullWidth?: boolean;
@@ -37,6 +37,8 @@ export default function Button({
         return colors.card;
       case 'outline':
         return 'transparent';
+      case 'destructive':
+        return colors.error;
       default:
         return colors.primary;
     }
@@ -52,6 +54,8 @@ export default function Button({
         return colors.text;
       case 'outline':
         return colors.primary;
+      case 'destructive':
+        return colors.onPrimary;
       default:
         return colors.onPrimary;
     }
